@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Merchant's Catalogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Oswald:wght@500;600&family=Yellowtail&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f1e7d0; --paper-2: #e9dcc0; --ink: #1f1b2d; --red: #d9432b; --mustard: #f0b429; --teal: #1e7a74;
+  --fat: "Abril Fatface", Georgia, serif; --script: "Yellowtail", cursive; --body: "Libre Baskerville", Georgia, serif; --label: "Oswald", "Arial Narrow", sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 20px; }
+body { margin: 0; background: #cdbf9f; color: var(--ink); font-family: var(--body); font-size: 1rem; line-height: 1.6; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+
+/* the sheet of paper */
+.page { position: relative; max-width: 1180px; margin: 28px auto; background: var(--paper); padding: 26px 44px 40px; box-shadow: 0 2px 0 #b9aa88, 0 18px 50px rgba(60, 40, 10, .35); overflow: hidden; }
+.page::before { /* paper grain */
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: .5; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .27  0 0 0 0 .15  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.label { font-family: var(--label); font-weight: 500; letter-spacing: .09em; text-transform: uppercase; font-size: .78rem; }
+.fn { font-family: var(--label); font-size: .68rem; font-weight: 600; text-decoration: none; vertical-align: super; line-height: 0; color: var(--red); padding: 0 1px; }
+.fn:hover { text-decoration: underline; }
+
+/* masthead */
+.mast { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 16px; border-bottom: 5px double var(--ink); padding-bottom: 12px; }
+.mast .co { font-family: var(--script); font-size: 2.1rem; line-height: 1; color: var(--red); }
+.mast .name { font-family: var(--fat); font-size: 1.5rem; line-height: 1; text-align: center; }
+.mast .issue { text-align: right; }
+
+/* feature */
+.feature { display: grid; grid-template-columns: 1fr 1.05fr; gap: 44px; align-items: center; padding: 30px 0 26px; }
+.plate { position: relative; aspect-ratio: 1 / .94; }
+.burst { position: absolute; inset: -2% -4%; width: 108%; height: 104%; filter: url(#boil); }
+.burst polygon { fill: var(--mustard); stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+.burst .dots { fill: url(#dots-red); stroke: none; }
+.jig { position: absolute; inset: 0; display: grid; place-items: center; animation: jig .64s steps(1) infinite; }
+.jig svg { width: 68%; height: auto; overflow: visible; filter: url(#boil); }
+.art * { stroke: var(--ink); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+.art .shade { fill: url(#dots-ink); stroke: none; opacity: .5; }
+.art .ground { fill: var(--ink); stroke: none; opacity: .9; }
+.seal { position: absolute; right: 2%; top: 6%; width: 132px; height: 132px; display: grid; place-items: center; text-align: center; background: var(--red); color: var(--paper); border-radius: 50%; border: 3px solid var(--ink); box-shadow: 0 0 0 5px var(--red), 0 0 0 8px var(--ink); font-family: var(--script); font-size: 1.55rem; line-height: .95; padding: 8px; animation: seal .96s steps(1) infinite; }
+.tag { position: absolute; left: 0; bottom: 5%; max-width: 62%; background: var(--paper); border: 3px solid var(--ink); padding: 8px 16px 6px; box-shadow: 5px 5px 0 var(--ink); transform: rotate(-5deg); }
+.tag b { display: block; font-family: var(--fat); font-weight: 400; font-size: 2.5rem; line-height: 1; }
+@keyframes jig { 0% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(3px, -5px) rotate(1.1deg); } 50% { transform: translate(-2px, 2px) rotate(-.8deg); } 75% { transform: translate(2px, 4px) rotate(.5deg); } }
+@keyframes seal { 0% { transform: rotate(9deg) scale(1); } 33% { transform: rotate(13deg) scale(1.05); } 66% { transform: rotate(7deg) scale(.98); } }
+@keyframes flip { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.burst .b1 { animation: flip .64s steps(1) infinite; }
+.burst .b2 { animation: flip .64s steps(1) infinite reverse; }
+
+.pitch .hello { font-family: var(--script); font-size: 1.9rem; color: var(--red); line-height: 1; margin: 0 0 6px; transform: rotate(-3deg); transform-origin: left; }
+.pitch h1 { font-family: var(--fat); font-weight: 400; font-size: clamp(3.6rem, 8.6vw, 7.6rem); line-height: .88; letter-spacing: -.01em; margin: 0; text-shadow: 5px 4px 0 var(--mustard); overflow-wrap: anywhere; }
+.pitch .for { display: flex; align-items: center; gap: 16px; font-style: italic; font-size: 1.5rem; margin: 16px 0 0; }
+.pitch .for svg { height: 64px; width: auto; flex: none; overflow: visible; }
+.pitch .for path { fill: var(--teal); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.pitch .item { display: flex; gap: 6px 18px; flex-wrap: wrap; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); padding: 7px 0 6px; margin: 20px 0 18px; }
+.copy { margin: 0 0 14px; max-width: 56ch; }
+.pitch .copy:first-of-type::first-letter { font-family: var(--fat); font-size: 3.5rem; line-height: .8; float: left; padding: 6px 8px 0 0; color: var(--red); }
+
+/* the figures at a glance */
+.glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); margin: 6px 0 0; padding: 0; list-style: none; }
+.glance:empty { display: none; }
+.glance li { padding: 18px 18px 16px; border-left: 1px dashed rgba(31, 27, 45, .55); }
+.glance li:first-child { border-left: 0; padding-left: 0; }
+.glance b { display: block; font-family: var(--fat); font-weight: 400; font-size: clamp(2.3rem, 4.4vw, 3.4rem); line-height: 1; color: var(--red); text-shadow: 3px 3px 0 var(--mustard); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px 4px 0; }
+.glance span { display: block; font-style: italic; font-size: .92rem; line-height: 1.35; margin-top: 6px; }
+
+/* section headings: a ribbon */
+.ribbon { display: flex; align-items: center; gap: 18px; margin: 38px 0 20px; }
+.ribbon h2 { font-family: var(--fat); font-weight: 400; font-size: 2rem; line-height: 1; margin: 0; }
+.ribbon i { flex: 1; min-width: 30px; height: 12px; background-image: radial-gradient(var(--ink) 1.6px, transparent 2px); background-size: 8px 8px; background-position: center; }
+.ribbon span { font-family: var(--script); font-size: 1.5rem; color: var(--teal); white-space: nowrap; }
+
+/* a chart beside the agent's remarks on it */
+.spread { display: grid; grid-template-columns: 1.35fr 1fr; gap: 40px; align-items: start; }
+.spread.narrow { grid-template-columns: 1fr 1.35fr; }
+.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--label); font-size: 12px; fill: var(--ink); }
+.chart .num { font-family: var(--fat); font-size: 17px; }
+.remarks p { margin: 0 0 12px; }
+.smallprint { font-size: .82rem; font-style: italic; margin: 10px 0 0; max-width: 78ch; }
+.twocol { columns: 2; column-gap: 40px; }
+.twocol p { margin: 0 0 12px; break-inside: avoid; }
+
+/* price list */
+.prices { width: 100%; border-collapse: collapse; }
+.prices th { font-family: var(--label); font-weight: 500; letter-spacing: .09em; text-transform: uppercase; font-size: .76rem; text-align: left; padding: 0 12px 8px 0; border-bottom: 2px solid var(--ink); }
+.prices td { padding: 14px 12px 14px 0; border-bottom: 1px dashed rgba(31, 27, 45, .5); vertical-align: middle; }
+.prices .store { font-family: var(--fat); font-size: 1.7rem; line-height: 1; white-space: nowrap; }
+.prices .store small { display: block; font-family: var(--body); font-style: italic; font-size: .86rem; margin-top: 5px; }
+.prices .price { font-family: var(--fat); font-size: 2.6rem; line-height: 1; color: var(--red); white-space: nowrap; }
+.prices .price sup { font-size: 1.2rem; vertical-align: top; position: relative; top: .25em; }
+.prices .strip { width: 46%; min-width: 220px; }
+.prices .r { text-align: right; padding-right: 0; white-space: nowrap; }
+.stars { color: var(--mustard); letter-spacing: 2px; -webkit-text-stroke: .6px var(--ink); }
+
+/* best sellers */
+.favs { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 2px solid var(--ink); border-left: 2px solid var(--ink); }
+.fav { padding: 18px 18px 18px 22px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; align-content: start; }
+.fav .letter { grid-row: span 3; width: 40px; height: 40px; border-radius: 50%; background: var(--ink); color: var(--paper); font-family: var(--fat); font-size: 1.2rem; display: grid; place-items: center; }
+.fav h3 { font-family: var(--body); font-weight: 700; font-size: .98rem; line-height: 1.3; margin: 0; }
+.fav h3 a { text-decoration-color: rgba(31, 27, 45, .35); text-underline-offset: 3px; }
+.fav .cost { font-family: var(--fat); font-size: 1.9rem; line-height: 1.05; color: var(--red); }
+.fav .more { font-size: .86rem; line-height: 1.45; }
+
+/* notes, caution, coupon */
+.noted { display: grid; grid-template-columns: 1.3fr 1fr; gap: 44px; align-items: start; }
+.noted.solo { grid-template-columns: 1fr; }
+.noted ol { margin: 0; padding: 0; list-style: none; counter-reset: n; }
+.noted li { counter-increment: n; position: relative; padding: 0 0 14px 44px; }
+.noted li::before { content: counter(n); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border: 2px solid var(--ink); border-radius: 50%; font-family: var(--fat); display: grid; place-items: center; line-height: 1; }
+.photo { margin: 26px 0 0; position: relative; transform: rotate(1.6deg); }
+.noted.solo .photo { max-width: 460px; margin-left: 24px; }
+.photo .frame { position: relative; border: 3px solid var(--ink); box-shadow: 7px 7px 0 var(--ink); background: var(--teal); overflow: hidden; max-height: 420px; }
+.photo img { display: block; width: 100%; filter: grayscale(1) contrast(1.3) brightness(1.4); mix-blend-mode: screen; }
+.photo .frame::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(var(--ink) 1px, transparent 1.5px); background-size: 4px 4px; mix-blend-mode: multiply; opacity: .5; }
+.photo figcaption { font-size: .8rem; font-style: italic; margin-top: 12px; }
+.photo .said { position: absolute; left: -18px; top: -20px; z-index: 2; font-family: var(--script); font-size: 1.5rem; line-height: 1; background: var(--mustard); border: 2px solid var(--ink); padding: 8px 14px 6px; transform: rotate(-8deg); animation: seal 1.1s steps(1) infinite; }
+
+.caution { border: 3px solid var(--ink); background: var(--paper); box-shadow: 6px 6px 0 var(--ink); padding: 0 24px 8px; margin-top: 40px; }
+.caution h2 { display: inline-block; font-family: var(--label); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; font-size: 1rem; background: var(--ink); color: var(--mustard); padding: 6px 16px 5px; margin: 0 0 14px -24px; }
+.caution ul { margin: 0; padding: 0; list-style: none; columns: 2; column-gap: 40px; }
+.caution li { break-inside: avoid; padding: 0 0 12px 30px; position: relative; }
+.caution li::before { content: "!"; position: absolute; left: 0; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--red); color: var(--paper); font-family: var(--fat); font-size: .9rem; display: grid; place-items: center; line-height: 1; }
+
+.coupon { position: relative; border: 3px dashed var(--ink); padding: 26px 30px 22px; margin-top: 44px; display: grid; grid-template-columns: .8fr 1.5fr; gap: 36px; align-items: start; background: var(--paper-2); }
+.coupon::before { content: "✂"; position: absolute; top: -17px; left: 34px; font-size: 1.5rem; background: var(--paper); padding: 0 8px; line-height: 1.2; }
+.coupon .advice { font-family: var(--script); font-size: 1.6rem; color: var(--red); line-height: 1; margin: 0 0 8px; }
+.coupon h2 { font-family: var(--fat); font-weight: 400; font-size: 2.4rem; line-height: 1; margin: 0; }
+.coupon ol { margin: 0; padding: 0; list-style: none; counter-reset: n; }
+.coupon li { counter-increment: n; display: grid; grid-template-columns: 2.4rem 1fr; padding: 10px 0; border-top: 1px solid var(--ink); }
+.coupon li:first-child { border-top: 0; padding-top: 0; }
+.coupon li::before { content: counter(n) "."; font-family: var(--fat); font-size: 1.5rem; line-height: 1.1; color: var(--red); }
+
+.unknown { margin: 0; padding-left: 1.2em; columns: 2; column-gap: 40px; font-style: italic; }
+.unknown li { break-inside: avoid; margin-bottom: 8px; }
+
+/* how it was compiled: order slips */
+.tally { margin: 0 0 14px; }
+.slips { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(168px, 1fr); gap: 14px; overflow-x: auto; padding: 4px 4px 12px; margin: 0; list-style: none; counter-reset: n; }
+.slips li { counter-increment: n; position: relative; background: #fbf5e4; border: 1.5px solid var(--ink); padding: 30px 12px 14px; font-size: .86rem; line-height: 1.4; min-height: 132px; }
+.slips li::before { content: "No. " counter(n); position: absolute; top: 6px; left: 12px; font-family: var(--label); letter-spacing: .09em; font-size: .72rem; text-transform: uppercase; }
+.slips b { display: block; font-size: .92rem; }
+.slips .arg { display: block; font-style: italic; overflow-wrap: anywhere; }
+.stamp { display: inline-block; margin-top: 10px; font-family: var(--label); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: .74rem; border: 2px solid; border-radius: 3px; padding: 2px 7px 1px; transform: rotate(-5deg); text-decoration: none; }
+.stamp.ok { color: var(--teal); } .stamp.no { color: var(--red); }
+.slips .why { display: block; margin-top: 8px; font-size: .8rem; }
+
+/* fine print */
+.fine { margin-top: 38px; border-top: 5px double var(--ink); padding-top: 14px; font-size: .8rem; line-height: 1.5; columns: 2; column-gap: 40px; }
+.fine p { margin: 0 0 7px; break-inside: avoid; scroll-margin-top: 20px; overflow-wrap: anywhere; }
+.fine b { font-family: var(--label); font-weight: 600; color: var(--red); margin-right: 5px; }
+.fine p:target { background: var(--mustard); box-shadow: 0 0 0 5px var(--mustard); }
+
+@media (prefers-reduced-motion: reduce) { .jig, .seal, .photo .said, .burst .b1, .burst .b2 { animation: none; } .burst .b2 { opacity: 0; } .burst, .jig svg { filter: none; } }
+@media (max-width: 860px) {
+  body { background: var(--paper); }
+  .page { margin: 0; padding: 18px 18px 30px; box-shadow: none; }
+  .mast { grid-template-columns: 1fr; gap: 6px; } .mast .name, .mast .issue { text-align: left; }
+  .feature, .spread, .spread.narrow, .noted, .coupon { grid-template-columns: 1fr; gap: 24px; }
+  .plate { max-width: 440px; }
+  .favs { grid-template-columns: 1fr; }
+  .prices .strip { display: none; } .prices .price { font-size: 2rem; } .prices .store { font-size: 1.3rem; white-space: normal; }
+  .twocol, .caution ul, .unknown, .fine { columns: 1; }
+  .ribbon { flex-wrap: wrap; gap: 6px 14px; } .ribbon h2 { font-size: 1.6rem; } .ribbon i { display: none; } .ribbon span { white-space: normal; flex-basis: 100%; }
+  .glance li { border-left: 0; padding-left: 0; border-top: 1px dashed rgba(31, 27, 45, .55); } .glance li:first-child { border-top: 0; }
+}
+</style>
+</head>
+<body>
+<!-- shared ink effects: halftone dots, and a "boil" that redraws outlines a few times a second -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="dots-red" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="4.5" cy="4.5" r="2.4" fill="#d9432b"/></pattern>
+    <pattern id="dots-ink" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="3" cy="3" r="1.5" fill="#1f1b2d"/></pattern>
+    <pattern id="dots-teal" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="3.5" cy="3.5" r="2" fill="#1e7a74"/></pattern>
+    <filter id="boil" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency=".018" numOctaves="2" seed="1"><animate attributeName="seed" values="1;4;7;2" dur=".64s" calcMode="discrete" repeatCount="indefinite"/></feTurbulence>
+      <feDisplacementMap in="SourceGraphic" scale="7"/>
+    </filter>
+  </defs>
+</svg>
+
+<div class="page">
+  <header class="mast">
+    <div class="co">Market Scout &amp; Co.</div>
+    <div class="name">The Merchant's Catalogue</div>
+    <div class="issue label" id="issue"></div>
+  </header>
+
+  <section class="feature">
+    <div class="plate">
+      <svg class="burst" viewBox="-110 -110 220 220" aria-hidden="true"><g class="b1"></g><g class="b2"></g></svg>
+      <div class="jig" id="art"></div>
+      <div class="seal" id="seal"></div>
+      <div class="tag" id="tag" hidden></div>
+    </div>
+    <div class="pitch">
+      <p class="hello">A trade report for sellers of</p>
+      <h1 id="title"></h1>
+      <p class="for"><span id="place"></span><span id="outline"></span></p>
+      <div class="item label" id="item"></div>
+      <div id="summary"></div>
+    </div>
+  </section>
+
+  <ul class="glance" id="glance" aria-label="The figures at a glance"></ul>
+  <main id="sections"></main>
+  <footer class="fine" id="fine"></footer>
+</div>
+
+<script>
+const RUN = /*__RUN_DATA__*/null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const money = (v) => "$" + Math.round(v).toLocaleString("en");
+const fn = (ids) => [...new Set(ids)].map((id) => `<a class="fn" href="#${id}" title="See the source">${id.slice(1)}</a>`).join("");
+const INK = "#1f1b2d", RED = "#d9432b", MUSTARD = "#f0b429", PAPER2 = "#e9dcc0";
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const TOOL_NAMES = { wikipedia_interest: "Wikipedia interest", eurostat_online_shopping: "Eurostat online shopping", open_food_catalogue: "Open Food Facts brands", web_search: "Web search", fetch_page: "Read a web page", retail_price_comparison: "Retailer price comparison", social_trends: "Social media trends", trend_articles: "Trend articles" };
+
+/* ---------- the plate: starburst and a drawn product ---------- */
+function star(spikes, outer, inner, wobble, turn) {
+  const pts = [];
+  for (let i = 0; i < spikes * 2; i++) {
+    const a = (Math.PI * i) / spikes + turn, r = (i % 2 ? inner : outer) * (1 + Math.sin(i * wobble) * 0.07);
+    pts.push(`${(Math.cos(a) * r).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`);
+  }
+  return pts.join(" ");
+}
+document.querySelector(".b1").innerHTML = `<polygon points="${star(16, 104, 76, 1.7, 0)}"/><polygon class="dots" points="${star(16, 86, 62, 1.7, 0)}"/>`;
+document.querySelector(".b2").innerHTML = `<polygon points="${star(16, 100, 80, 2.3, 0.11)}"/><polygon class="dots" points="${star(16, 84, 66, 2.3, 0.11)}"/>`;
+
+// Flat inks with a halftone shadow side, like a two-colour catalogue cut.
+const ART = {
+  carton: `<ellipse class="ground" cx="104" cy="186" rx="62" ry="9"/>
+    <polygon fill="#fffaf0" points="52,78 126,78 126,178 52,178"/><polygon fill="#fffaf0" points="126,78 156,64 156,164 126,178"/><polygon class="shade" points="126,78 156,64 156,164 126,178"/>
+    <polygon fill="#1e7a74" points="52,128 126,128 126,178 52,178"/><polygon fill="#1e7a74" points="126,128 156,114 156,164 126,178"/><polygon class="shade" points="126,128 156,114 156,164 126,178"/>
+    <polygon fill="#fffaf0" points="52,78 89,40 126,78"/><polygon fill="#fffaf0" points="126,78 89,40 119,28 156,64"/><polygon class="shade" points="126,78 89,40 119,28 156,64"/>
+    <polygon fill="#fffaf0" points="83,40 89,22 119,10 119,28 89,40"/><circle fill="#d9432b" cx="138" cy="56" r="9"/><circle fill="#f0b429" cx="89" cy="126" r="22"/>`,
+  bottle: `<ellipse class="ground" cx="100" cy="188" rx="46" ry="8"/>
+    <path fill="#1e7a74" d="M86 24h28v30c0 14 22 22 22 46v74c0 6-4 10-10 10H74c-6 0-10-4-10-10v-74c0-24 22-32 22-46z"/>
+    <path class="shade" d="M112 24h2v30c0 14 22 22 22 46v74c0 6-4 10-10 10h-16z"/>
+    <rect fill="#fffaf0" x="64" y="108" width="72" height="50"/><circle fill="#f0b429" cx="100" cy="133" r="15"/><rect fill="#d9432b" x="82" y="10" width="36" height="18" rx="3"/>`,
+  rug: `<polygon class="ground" points="40,142 128,96 196,128 108,176"/>
+    <polygon fill="#d9432b" points="20,118 112,68 184,102 92,154"/><polygon fill="none" points="36,117 111,77 167,103 92,144" style="stroke:#f0b429;stroke-width:7"/>
+    <polygon fill="#1e7a74" points="102,90 132,104 102,122 72,108"/><ellipse fill="#fffaf0" cx="102" cy="106" rx="11" ry="6"/>
+    <polygon class="shade" points="92,154 184,102 184,110 92,162"/><polygon fill="#a8301d" points="20,118 92,154 92,162 20,126"/>
+    <path fill="none" d="M14 122l-8 5M22 127l-8 5M30 131l-8 5M186 98l8-5M178 94l8-5M170 90l8-5"/>`,
+  box: `<ellipse class="ground" cx="104" cy="184" rx="66" ry="9"/>
+    <polygon fill="#d9a35a" points="40,76 104,104 104,178 40,148"/><polygon fill="#d9a35a" points="104,104 166,76 166,148 104,178"/><polygon class="shade" points="104,104 166,76 166,148 104,178"/>
+    <polygon fill="#e9c184" points="40,76 102,50 166,76 104,104"/><polygon fill="#f0b429" points="66,65 78,60 142,87 130,92"/><polygon fill="#f0b429" points="130,92 142,87 142,110 130,116"/>`,
+};
+$("art").innerHTML = `<svg class="art" viewBox="0 0 200 200" role="img" aria-label="Drawing of the product">${ART[RUN.shape] || ART.box}</svg>`;
+
+/* ---------- the pitch ---------- */
+const S = RUN.sections, m = RUN.metrics;
+document.title = `${cap(RUN.category)} in ${RUN.countryName} | The Merchant's Catalogue`;
+$("title").textContent = cap(RUN.category);
+$("place").textContent = RUN.tagline || `in ${RUN.countryName}`;
+$("issue").textContent = `${RUN.countryName.replace(/^the /, "")}, ${new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
+if (RUN.outline) $("outline").outerHTML = `<svg viewBox="0 0 ${RUN.outline.w} ${RUN.outline.h}" role="img" aria-label="Outline of ${esc(RUN.countryName)}"><path d="${RUN.outline.path}"/></svg>`;
+$("item").innerHTML = [`Cat. No. ${RUN.category.split(" ").map((w) => w[0]).join("").toUpperCase()}-${RUN.country}-${String(new Date().getFullYear()).slice(2)}`, `${m.claims} findings`, `${RUN.evidence.length} sources`].map((t) => `<span>${esc(t)}</span>`).join("");
+$("summary").innerHTML = (S.summary || []).map((p) => `<p class="copy">${esc(p.text)}${fn(p.cites)}</p>`).join("");
+$("seal").innerHTML = `${RUN.evidence.length} sources<br>checked!`;
+
+/* ---------- figures at a glance, read straight from the evidence data ---------- */
+const figures = [];
+const firstOf = (kind) => RUN.evidence.find((e) => e.data && e.data.kind === kind && e.data.points.length);
+const prices = firstOf("retailer_prices");
+if (prices) for (const r of prices.data.points) figures.push([money(r.median), `typical ${prices.data.label} at ${r.name}`, prices.id]);
+const views = firstOf("monthly_views");
+if (views) {
+  const v = views.data.points.map((p) => p[1]), recent = v.slice(-12), before = v.slice(-24, -12), sum = (a) => a.reduce((x, y) => x + y, 0);
+  figures.push([Math.round(sum(recent) / recent.length).toLocaleString("en"), `monthly readers of the “${views.data.title}” article`, views.id]);
+  if (before.length === 12 && sum(before)) { const c = Math.round(((sum(recent) - sum(before)) / sum(before)) * 100); figures.push([`${c > 0 ? "+" : ""}${c}%`, "public interest against last year", views.id]); }
+}
+const shop = firstOf("yearly_percent");
+if (shop) figures.push([`${Math.round(shop.data.points.at(-1)[1])}%`, `of people in ${RUN.countryName} shop online`, shop.id]);
+const shelf = firstOf("brand_counts");
+if (shelf) { figures.push([shelf.data.total.toLocaleString("en"), `${shelf.data.label || "products"} already on sale`, shelf.id]); figures.push([shelf.data.points[0][0], `the brand with most listings (${shelf.data.points[0][1]})`, shelf.id]); }
+$("glance").innerHTML = figures.slice(0, 5).map(([n, label, id]) => `<li><b>${esc(n)}</b><span>${esc(label)}${fn([id])}</span></li>`).join("");
+if (figures.length) { $("tag").hidden = false; $("tag").innerHTML = `<span class="label">${esc(figures[0][1])}</span><b>${esc(figures[0][0])}</b>`; }
+
+/* ---------- graphs, drawn in ink ---------- */
+function viewsChart(d) {
+  const pts = d.points, W = 660, H = 290, L = 50, R = 14, T = 34, B = 34;
+  const top = Math.max(...pts.map((p) => p[1])) || 1, max = top * 1.2;
+  const x = (i) => L + (i * (W - L - R)) / Math.max(pts.length - 1, 1), y = (v) => H - B - (v * (H - T - B)) / max;
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+  const split = pts.length - 12, peakI = pts.reduce((b, p, i) => (i >= split && p[1] > pts[b][1] ? i : b), Math.max(split, 0));
+  const label = (ym) => `${MONTHS[+ym.slice(4) - 1]} ’${ym.slice(2, 4)}`;
+  const px = Math.min(Math.max(x(peakI), L + 60), W - R - 60);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly page views over ${pts.length} months, peaking at ${pts[peakI][1]} in ${label(pts[peakI][0])}">
+    ${split > 0 ? `<rect x="${x(split)}" y="${T - 8}" width="${x(pts.length - 1) - x(split)}" height="${H - T - B + 8}" fill="${MUSTARD}" opacity=".3"/><text x="${x(split) + 8}" y="${T + 6}" letter-spacing="1">THE LAST 12 MONTHS</text>` : ""}
+    ${[0, 0.5, 1].map((f) => { const v = Math.round(top * f); return `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${INK}" stroke-opacity=".3" stroke-dasharray="2 5"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v.toLocaleString("en")}</text>`; }).join("")}
+    <path d="${line}L${x(pts.length - 1)},${H - B}L${x(0)},${H - B}Z" fill="url(#dots-teal)" opacity=".8"/>
+    <path d="${line}" fill="none" stroke="${INK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+    <line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="${INK}" stroke-width="2"/>
+    <circle cx="${x(peakI)}" cy="${y(pts[peakI][1])}" r="6" fill="${RED}" stroke="${INK}" stroke-width="2"/>
+    <text class="num" x="${px}" y="${y(pts[peakI][1]) - 13}" text-anchor="middle" fill="${RED}" stroke="#f1e7d0" stroke-width="5" paint-order="stroke">${pts[peakI][1].toLocaleString("en")} in ${label(pts[peakI][0])}</text>
+    ${pts.map((p, i) => (i % 6 === 0 || i === pts.length - 1 ? `<text x="${x(i)}" y="${H - 10}" text-anchor="${i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"}">${label(p[0])}</text>` : "")).join("")}</svg>`;
+}
+function percentChart(d) {
+  const pts = d.points, W = 360, H = 270, B = 28, T = 36, gap = 12;
+  const bw = (W - gap * (pts.length - 1)) / pts.length, h = (v) => (v / 100) * (H - T - B);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${pts.map((p) => `${p[0]}: ${Math.round(p[1])}%`).join(", ")}">
+    ${pts.map((p, i) => { const last = i === pts.length - 1, bx = i * (bw + gap), by = H - B - h(p[1]);
+      return `<rect x="${bx}" y="${by}" width="${bw}" height="${h(p[1])}" fill="${last ? RED : MUSTARD}" stroke="${INK}" stroke-width="2"/>${last ? "" : `<rect x="${bx}" y="${by}" width="${bw}" height="${h(p[1])}" fill="url(#dots-ink)" opacity=".28"/>`}
+        <text class="${last ? "num" : ""}" x="${bx + bw / 2}" y="${by - 8}" text-anchor="middle" ${last ? `fill="${RED}"` : ""}>${Math.round(p[1])}${last ? "%" : ""}</text>
+        <text x="${bx + bw / 2}" y="${H - 8}" text-anchor="middle">${pts.length > 5 ? "’" + p[0].slice(2) : p[0]}</text>`; }).join("")}
+    <line x1="0" x2="${W}" y1="${H - B}" y2="${H - B}" stroke="${INK}" stroke-width="2"/></svg>`;
+}
+function barChart(d) {
+  const pts = d.points, W = 600, row = 44, L = 150, max = Math.max(...pts.map((p) => p[1])) || 1, H = pts.length * row;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${pts.map((p) => `${p[0]}: ${p[1]}`).join(", ")}">
+    ${pts.map((p, i) => { const w = Math.max((p[1] / max) * (W - L - 70), 4), yy = i * row + 6;
+      return `<text x="${L - 12}" y="${yy + 21}" text-anchor="end" style="font-size:14px">${esc(p[0].length > 17 ? p[0].slice(0, 16) + "…" : p[0])}</text>
+        <rect x="${L}" y="${yy}" width="${w}" height="30" fill="${i === 0 ? RED : PAPER2}" stroke="${INK}" stroke-width="2"/>${i === 0 ? "" : `<rect x="${L}" y="${yy}" width="${w}" height="30" fill="url(#dots-ink)" opacity=".45"/>`}
+        <text class="num" x="${L + w + 9}" y="${yy + 22}">${p[1].toLocaleString("en")}</text>`; }).join("")}</svg>`;
+}
+function priceTable(d) {
+  const max = Math.max(...d.points.map((p) => p.max)), W = 420, x = (v) => 14 + (v / max) * (W - 64);
+  const step = [5, 10, 25, 50, 100, 250, 500, 1000].find((s) => max / s <= 5) || 2500;
+  const ticks = Array.from({ length: Math.floor(max / step) + 1 }, (_, i) => i * step);
+  return `<table class="prices"><thead><tr><th>Store</th><th>Typical price</th><th class="strip">From cheapest to dearest</th><th class="r">Rating</th></tr></thead><tbody>
+    ${d.points.map((p) => `<tr><td class="store">${esc(p.name)}<small>${p.n} listings</small></td><td class="price"><sup>$</sup>${Math.round(p.median)}</td>
+      <td class="strip"><svg class="chart" viewBox="0 0 ${W} 46" role="img" aria-label="${esc(p.name)}: from ${money(p.min)} to ${money(p.max)}, typically ${money(p.median)}">
+        ${ticks.map((v) => `<line x1="${x(v)}" x2="${x(v)}" y1="30" y2="36" stroke="${INK}"/><text x="${x(v)}" y="46" text-anchor="middle" opacity=".7">${v}</text>`).join("")}
+        <line x1="${x(p.min)}" x2="${x(p.max)}" y1="18" y2="18" stroke="${INK}" stroke-width="2"/><line x1="${x(p.min)}" x2="${x(p.min)}" y1="12" y2="24" stroke="${INK}" stroke-width="2"/><line x1="${x(p.max)}" x2="${x(p.max)}" y1="12" y2="24" stroke="${INK}" stroke-width="2"/>
+        <rect x="${x(p.q1)}" y="7" width="${Math.max(x(p.q3) - x(p.q1), 3)}" height="22" fill="${MUSTARD}" stroke="${INK}" stroke-width="2"/><rect x="${x(p.q1)}" y="7" width="${Math.max(x(p.q3) - x(p.q1), 3)}" height="22" fill="url(#dots-ink)" opacity=".35"/>
+        <line x1="${x(p.median)}" x2="${x(p.median)}" y1="2" y2="34" stroke="${RED}" stroke-width="4"/><text x="${x(p.max) + 7}" y="22">${money(p.max)}</text></svg></td>
+      <td class="r">${p.rating ? `<span class="stars">★</span> ${p.rating.toFixed(1)}` : ""}</td></tr>`).join("")}</tbody></table>`;
+}
+function bestSellers(d) {
+  const top = [...d.products].sort((a, b) => b.reviews - a.reviews).slice(0, 6);
+  return `<div class="favs">${top.map((p, i) => `<article class="fav"><div class="letter">${String.fromCharCode(65 + i)}</div>
+    <h3><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.name.length > 54 ? p.name.slice(0, 53) + "…" : p.name)}</a></h3>
+    <div class="cost">${money(p.price)}</div><div class="more">${p.rating ? `<span class="stars">${"★".repeat(Math.round(p.rating))}</span> ${p.rating}<br>` : ""}${p.reviews.toLocaleString("en")} reviews, at ${esc(p.retailer)}</div></article>`).join("")}</div>`;
+}
+
+/* ---------- sections ---------- */
+const findings = S.findings || [], used = new Set();
+const remarks = (id) => findings.filter((f, i) => f.cites.includes(id) && !used.has(i) && used.add(i)).map((f) => `<p>${esc(f.text)}${fn(f.cites)}</p>`).join("");
+const ribbon = (title, aside) => `<div class="ribbon"><h2>${esc(title)}</h2><i></i>${aside ? `<span>${esc(aside)}</span>` : ""}</div>`;
+const spread = (chart, id, note, narrow) => `<section class="spread ${narrow ? "narrow" : ""}"><div>${chart}<p class="smallprint">${note}${fn([id])}</p></div><div class="remarks">${remarks(id)}</div></section>`;
+
+let html = "";
+for (const e of RUN.evidence) {
+  const d = e.data;
+  if (!d || !d.points || !d.points.length) continue;
+  if (d.kind === "retailer_prices") {
+    html += ribbon("What your competitors charge", "three stores compared") + priceTable(d)
+      + `<p class="smallprint">Typical price is the median listing. The shaded bar holds the middle half of listings. Sizes are mixed, so read these as a guide.${fn([e.id])}</p><div class="twocol" style="margin-top:18px">${remarks(e.id)}</div>`;
+    if (d.products && d.products.length) html += ribbon("Their best sellers", "the most-reviewed listings") + bestSellers(d);
+  } else if (d.kind === "brand_counts") {
+    html += ribbon("Who you are up against", `${d.total} ${d.label || "products"} on sale`) + spread(barChart(d), e.id, "Listings in a crowd-sourced catalogue: it shows who is present, not their market share.");
+  } else if (d.kind === "monthly_views") {
+    html += ribbon("Is the public interested?", `readers of “${d.title}”`) + spread(viewsChart(d), e.id, `Monthly views of the ${d.lang}.wikipedia article. Page views show curiosity, not sales.`);
+  } else if (d.kind === "yearly_percent") {
+    html += ribbon("Can you sell it online?", "share of people who shop online") + spread(percentChart(d), e.id, "Share of all individuals who bought something online in the past year. Eurostat.", true);
+  } else if (d.kind === "hashtags") {
+    html += ribbon("What shoppers are talking about", "Instagram and Pinterest") + spread(barChart(d), e.id, "Total likes and saves on posts carrying each hashtag.");
+  }
+}
+
+const rest = findings.filter((_, i) => !used.has(i));
+const photo = RUN.photo ? `<figure class="photo"><div class="said">From the archives!</div><div class="frame"><img alt="${esc(RUN.photo.title)}" src="${esc(RUN.photo.url)}" loading="lazy"></div><figcaption>${esc(RUN.photo.title)}. ${esc(RUN.photo.credit)}. <a href="${esc(RUN.photo.page)}" target="_blank" rel="noopener">Wikimedia Commons</a>.</figcaption></figure>` : "";
+if (rest.length || photo) html += ribbon("Also worth knowing", "") + `<section class="noted ${photo && rest.length ? "" : "solo"}">${rest.length ? `<ol>${rest.map((f) => `<li>${esc(f.text)}${fn(f.cites)}</li>`).join("")}</ol>` : ""}${photo}</section>`;
+
+if ((S.risks || []).length) html += `<section class="caution"><h2>Mind these risks</h2><ul>${S.risks.map((r) => `<li>${esc(r.text)}${fn(r.cites)}</li>`).join("")}</ul></section>`;
+if ((S.recommendations || []).length) html += `<section class="coupon"><div><p class="advice">Clip and keep</p><h2>Our advice to the merchant</h2></div><ol>${S.recommendations.map((r) => `<li><span>${esc(r.text)}${fn(r.cites)}</span></li>`).join("")}</ol></section>`;
+if ((S.open || []).length) html += ribbon("What we could not find out", "") + `<ul class="unknown">${S.open.map((o) => `<li>${esc(o.text)}</li>`).join("")}</ul>`;
+
+const misses = RUN.toolLog.filter((t) => !t.ok).length;
+const shortArgs = (raw) => { try { return Object.values(JSON.parse(raw)).join(", "); } catch { return raw; } };
+const why = (d) => /404/.test(d) ? "Page not found" : /robots/.test(d) ? "Site asks robots to stay out" : /no .*article|No Wikipedia/i.test(d) ? "No matching article" : /No Open Food Facts/.test(d) ? "No products listed" : /503|Timeout|timed out/i.test(d) ? "Service did not answer" : d.replace(/^\w+Error: /, "").slice(0, 70);
+html += ribbon("How this report was compiled", "the agent's enquiries, in order")
+  + `<p class="tally">${m.claims} findings, ${m.unsupported_claims ? `${m.unsupported_claims} of them without a source` : "every one with a source"}. ${RUN.toolLog.length} enquiries sent, ${misses ? `${misses} returned empty` : "none returned empty"}.</p>
+  <ol class="slips">${RUN.toolLog.map((t) => `<li><b>${esc(TOOL_NAMES[t.tool] || t.tool)}</b><span class="arg">${esc(shortArgs(t.args).slice(0, 90))}</span>
+    ${t.ok ? `<a class="stamp ok" href="#${t.detail}">Received, note ${t.detail.slice(1)}</a>` : `<span class="stamp no">Returned empty</span><span class="why">${esc(why(t.detail))}</span>`}</li>`).join("")}</ol>`;
+$("sections").innerHTML = html;
+
+$("fine").innerHTML = RUN.evidence.map((e) => `<p id="${e.id}"><b>${e.id.slice(1)}</b>${esc(TOOL_NAMES[e.tool] || e.tool)}: ${esc(e.summary.length > 230 ? e.summary.slice(0, 230) + "…" : e.summary)} <a href="${esc(e.source)}" target="_blank" rel="noopener">Source</a></p>`).join("")
+  + `<p>Compiled by an AI agent in ${Math.round(m.seconds)} seconds, using ${m.llm_calls} model calls. Every finding carries a note to its source; check the sources before acting on it.</p>`;
+</script>
+</body>
+</html>

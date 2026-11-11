@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market Scout style prototypes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
+<style>
+* { box-sizing: border-box; }
+html { scroll-behavior: auto; }
+body { margin: 0; font-family: "Hanken Grotesk", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.proto { display: none; min-height: 100vh; }
+.proto.on { display: block; }
+canvas.product { display: block; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+.e { font-size: .68rem; font-weight: 700; border-radius: 999px; padding: 1px 7px; margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
+
+/* switcher */
+.switch { position: fixed; z-index: 20; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(20, 18, 40, .88); backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0, 0, 0, .25); }
+.switch button { font: 600 .86rem "Hanken Grotesk", sans-serif; color: #cfd0dc; background: none; border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer; }
+.switch button[aria-pressed="true"] { background: #ffd23f; color: #15122e; }
+.switch button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* =====================================================================
+   A. BENTO: big friendly grotesk, tiles of very different sizes and colours
+   ===================================================================== */
+.a { --ink: #15122e; --muted: #62647a; color: var(--ink); background: #f4f5f9;
+     background-image: radial-gradient(1100px 620px at 78% -8%, #ffd23f 0, #ffe27a 34%, rgba(255, 226, 122, 0) 68%); background-repeat: no-repeat; }
+.a .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 28px 110px; }
+.a .top { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: .92rem; }
+.a .top b { font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 1.1rem; letter-spacing: -.02em; }
+.a .top span { background: rgba(21, 18, 46, .08); padding: 6px 14px; border-radius: 999px; }
+.a .hero { display: grid; grid-template-columns: 1.1fr 1fr; align-items: end; min-height: 440px; }
+.a h1 { font-family: "Bricolage Grotesque"; font-weight: 800; font-size: clamp(4.5rem, 12vw, 10.5rem); line-height: .84; letter-spacing: -.055em; margin: 0 0 22px; }
+.a .hero p { font-size: 1.22rem; line-height: 1.4; max-width: 30ch; margin: 0 0 36px; font-weight: 500; }
+.a .stage { height: 440px; }
+.a .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.a .tile { background: #fff; border-radius: 28px; padding: 26px 28px; min-width: 0; }
+.a .tile h2 { font: 600 .95rem "Hanken Grotesk"; color: var(--muted); margin: 0 0 14px; }
+.a .fig { grid-column: span 3; display: flex; flex-direction: column; justify-content: space-between; min-height: 210px; }
+.a .fig b { font-family: "Bricolage Grotesque"; font-weight: 800; font-size: clamp(3.2rem, 6vw, 5.2rem); line-height: .9; letter-spacing: -.05em; }
+.a .fig small { font-size: .98rem; font-weight: 600; }
+.a .fig i { display: block; height: 10px; border-radius: 999px; background: currentColor; opacity: .9; margin-top: 12px; }
+.a .fig.yellow { background: #ffd23f; }
+.a .fig.ink { background: var(--ink); color: #fff; }
+.a .fig.ink h2, .a .fig.yellow h2 { color: inherit; opacity: .7; }
+.a .fig.blue { background: #2f5bff; color: #fff; }
+.a .fig.blue h2 { color: inherit; opacity: .75; }
+.a .chart { grid-column: span 7; }
+.a .list { grid-column: span 5; }
+.a .say { grid-column: span 12; background: var(--ink); color: #fff; display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
+.a .say b { font-family: "Bricolage Grotesque"; font-size: 1.9rem; letter-spacing: -.03em; line-height: 1.12; max-width: 30ch; font-weight: 600; }
+.a .say span { color: #b9bbd0; max-width: 52ch; }
+.a .e { background: #eceefb; color: #2f5bff; }
+.a svg text { font-family: "Hanken Grotesk"; font-weight: 600; fill: var(--muted); font-size: 13px; }
+.a svg .who { fill: var(--ink); font-size: 15px; font-weight: 700; }
+.a svg .val { font-family: "Bricolage Grotesque"; font-weight: 800; fill: var(--ink); font-size: 20px; letter-spacing: -.03em; }
+.a .track { stroke: #e3e5f0; stroke-width: 10; stroke-linecap: round; }
+.a .box { fill: #2f5bff; }
+.a .box.lead { fill: var(--ink); }
+.a .med { stroke: #ffd23f; stroke-width: 5; stroke-linecap: round; }
+.a ol { list-style: none; margin: 0; padding: 0; }
+.a li { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 13px 0; border-top: 1px solid #eceef4; }
+.a li:first-child { border-top: 0; padding-top: 0; }
+.a li b { font-weight: 600; }
+.a li em { font-style: normal; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 1.25rem; letter-spacing: -.03em; }
+.a li span { grid-column: 1 / -1; color: var(--muted); font-size: .88rem; }
+
+/* =====================================================================
+   B. NIGHT: deep indigo, the yellow becomes light; mono numerals, hairlines
+   ===================================================================== */
+.b { --ink: #0c0a1d; --line: rgba(255, 255, 255, .11); --dim: #9a9bb5; color: #f3f2fa; background: var(--ink);
+     background-image: radial-gradient(760px 520px at 74% 16%, rgba(255, 210, 63, .5) 0, rgba(255, 210, 63, .14) 38%, transparent 70%), radial-gradient(900px 600px at 8% 0%, rgba(242, 56, 90, .2) 0, transparent 60%); background-repeat: no-repeat; }
+.b .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 28px 110px; }
+.b .top { display: flex; justify-content: space-between; font: 400 .8rem "JetBrains Mono", monospace; color: var(--dim); }
+.b .top b { color: #ffd23f; font-weight: 600; }
+.b .hero { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; min-height: 470px; }
+.b h1 { font-family: "Unbounded"; font-weight: 700; font-size: clamp(3.4rem, 8.6vw, 7.4rem); line-height: .96; letter-spacing: -.045em; margin: 0 0 26px; }
+.b .hero p { color: #c9c9dc; font-size: 1.12rem; line-height: 1.5; max-width: 40ch; margin: 0; }
+.b .stage { height: 470px; position: relative; }
+.b .stage::before { content: ""; position: absolute; inset: 8% 6%; background-image: radial-gradient(rgba(255, 210, 63, .55) 1.6px, transparent 2px); background-size: 13px 13px; -webkit-mask-image: radial-gradient(circle at 50% 55%, #000 0, transparent 62%); mask-image: radial-gradient(circle at 50% 55%, #000 0, transparent 62%); }
+.b .stage canvas { position: relative; }
+.b .rail { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.b .rail div { padding: 26px 24px 24px; border-left: 1px solid var(--line); }
+.b .rail div:first-child { border-left: 0; padding-left: 0; }
+.b .rail b { display: block; font: 600 clamp(2.4rem, 4.6vw, 3.9rem)/1 "JetBrains Mono", monospace; letter-spacing: -.06em; color: #ffd23f; }
+.b .rail span { display: block; margin-top: 12px; color: var(--dim); font-size: .92rem; }
+.b .rail .e { display: inline-block; margin: 0 0 0 6px; }
+.b .grid { display: grid; grid-template-columns: 7fr 5fr; gap: 18px; margin-top: 18px; }
+.b .tile { border: 1px solid var(--line); border-radius: 18px; padding: 24px 26px; background: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .015)); min-width: 0; }
+.b .tile h2 { font: 400 .78rem "JetBrains Mono", monospace; color: var(--dim); margin: 0 0 18px; }
+.b .e { background: rgba(255, 210, 63, .14); color: #ffd23f; font-family: "JetBrains Mono"; font-weight: 600; }
+.b svg text { font-family: "JetBrains Mono", monospace; fill: var(--dim); font-size: 12px; }
+.b svg .who { fill: #f3f2fa; font-size: 13px; }
+.b svg .val { fill: #ffd23f; font-size: 16px; font-weight: 600; }
+.b .track { stroke: rgba(255, 255, 255, .16); stroke-width: 2; }
+.b .box { fill: rgba(255, 210, 63, .28); stroke: #ffd23f; stroke-width: 1.5; }
+.b .box.lead { fill: #ffd23f; filter: drop-shadow(0 0 14px rgba(255, 210, 63, .7)); }
+.b .med { stroke: #fff; stroke-width: 2.5; }
+.b ol { list-style: none; margin: 0; padding: 0; counter-reset: n; }
+.b li { counter-increment: n; display: grid; grid-template-columns: 2.2rem 1fr auto; gap: 2px 8px; padding: 14px 0; border-top: 1px solid var(--line); }
+.b li:first-child { border-top: 0; padding-top: 0; }
+.b li::before { content: "0" counter(n); font: 400 .8rem "JetBrains Mono"; color: var(--dim); padding-top: 3px; }
+.b li em { font: 600 1rem "JetBrains Mono"; font-style: normal; color: #ffd23f; }
+.b li span { grid-column: 2 / -1; color: var(--dim); font-size: .86rem; }
+.b .say { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.b .say b { font-family: "Unbounded"; font-weight: 500; font-size: 1.45rem; line-height: 1.3; letter-spacing: -.03em; }
+.b .say span { color: #c9c9dc; line-height: 1.55; }
+
+/* =====================================================================
+   C. MAGAZINE: a feature article. Serif headline, product pinned in the
+      margin while the story scrolls, halftone ink for the data.
+   ===================================================================== */
+.c { --ink: #171430; --muted: #666a7c; color: var(--ink); background: #fff;
+     background-image: linear-gradient(180deg, #ffd23f 0, #ffdf6e 240px, rgba(255, 223, 110, 0) 640px); background-repeat: no-repeat; }
+.c .wrap { max-width: 1200px; margin: 0 auto; padding: 26px 28px 110px; }
+.c .top { display: flex; justify-content: space-between; font-size: .88rem; font-weight: 600; border-bottom: 1.5px solid var(--ink); padding-bottom: 10px; }
+.c h1 { font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(5rem, 15vw, 13.5rem); line-height: .8; letter-spacing: -.035em; margin: 38px 0 0; }
+.c h1 i { font-style: italic; }
+.c .deck { font-family: "Instrument Serif", serif; font-size: clamp(1.5rem, 2.6vw, 2.15rem); line-height: 1.16; max-width: 26ch; margin: 26px 0 0; }
+.c .cols { display: grid; grid-template-columns: 360px 1fr; gap: 64px; margin-top: 30px; align-items: start; }
+.c aside { position: sticky; top: 16px; }
+.c .stage { height: 330px; margin: -40px -20px 0; }
+.c .note { border-top: 1.5px solid var(--ink); padding: 14px 0 16px; display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: baseline; }
+.c .note b { font-family: "Bowlby One", sans-serif; font-weight: 400; font-size: 2.5rem; line-height: 1; min-width: 5.6rem; color: var(--ink); text-shadow: 3px 3px 0 #ffd23f; }
+.c .note span { font-size: .93rem; line-height: 1.35; color: var(--muted); }
+.c article h2 { font-family: "Instrument Serif", serif; font-weight: 400; font-size: 2.5rem; line-height: 1; letter-spacing: -.02em; margin: 0 0 16px; }
+.c article p { font-size: 1.12rem; line-height: 1.62; max-width: 60ch; margin: 0 0 18px; }
+.c article p.first::first-letter { font-family: "Instrument Serif", serif; font-size: 4.9rem; line-height: .78; float: left; padding: 8px 10px 0 0; }
+.c figure { margin: 34px 0 40px; }
+.c figcaption { font-size: .88rem; color: var(--muted); margin-top: 10px; border-top: 1px solid #dfe1e8; padding-top: 10px; }
+.c blockquote { font-family: "Instrument Serif", serif; font-style: italic; font-size: 2.3rem; line-height: 1.1; margin: 40px 0; padding-left: 22px; border-left: 6px solid #ffd23f; max-width: 22ch; }
+.c .e { background: var(--ink); color: #fff; }
+.c svg text { font-family: "Hanken Grotesk"; font-weight: 600; fill: var(--muted); font-size: 13px; }
+.c svg .who { font-family: "Instrument Serif", serif; font-style: italic; font-weight: 400; fill: var(--ink); font-size: 24px; }
+.c svg .val { font-family: "Bowlby One"; font-weight: 400; fill: var(--ink); font-size: 17px; }
+.c .track { stroke: var(--ink); stroke-width: 1.5; }
+.c .box { fill: url(#halftone); stroke: var(--ink); stroke-width: 1.5; }
+.c .box.lead { fill: #ffd23f; }
+.c .med { stroke: var(--ink); stroke-width: 4; }
+
+@media (max-width: 900px) {
+  .a .hero, .b .hero { grid-template-columns: 1fr; }
+  .a .stage, .b .stage { height: 320px; }
+  .a .fig { grid-column: span 6; } .a .chart, .a .list { grid-column: span 12; } .a .say { grid-template-columns: 1fr; }
+  .b .rail { grid-template-columns: 1fr 1fr; } .b .grid, .b .say { grid-template-columns: 1fr; }
+  .c .cols { grid-template-columns: 1fr; gap: 24px; } .c aside { position: static; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================== A ============================== -->
+<section class="proto a on" id="a">
+  <div class="wrap">
+    <div class="top"><b>Market Scout</b><span>United States, November 2026</span></div>
+    <div class="hero">
+      <div>
+        <h1>Area rug</h1>
+        <p>Shoppers buy online, expect washable, and pay very different prices depending on where they look.</p>
+      </div>
+      <div class="stage"><canvas class="product"></canvas></div>
+    </div>
+    <div class="grid">
+      <div class="tile fig yellow"><h2>Wayfair median</h2><div><b>$137</b><i style="width:100%"></i></div><small>the premium shelf</small></div>
+      <div class="tile fig"><h2>Amazon median</h2><div><b>$61</b><i style="width:45%;color:#2f5bff"></i></div><small>the volume shelf</small></div>
+      <div class="tile fig ink"><h2>Walmart median</h2><div><b>$38</b><i style="width:28%;color:#ffd23f"></i></div><small>the budget shelf</small></div>
+      <div class="tile fig blue"><h2>Prefer buying online</h2><div><b>42%</b><i style="width:42%;color:#fff"></i></div><small>of US rug shoppers</small></div>
+
+      <div class="tile chart"><h2>What an area rug costs, by retailer <span class="e">E1</span></h2><div data-chart></div></div>
+      <div class="tile list"><h2>Most-reviewed products <span class="e">E1</span></h2>
+        <ol>
+          <li><b>Adrihana Machine Woven Abstract</b><em>$205</em><span>Wayfair, 4.7 stars, 14,722 reviews</span></li>
+          <li><b>Saidey Abstract Indoor Rug</b><em>$177</em><span>Wayfair, 4.7 stars, 12,631 reviews</span></li>
+          <li><b>Nefoso Shag, light brown</b><em>$27</em><span>Walmart, 4.4 stars, 9,300 reviews</span></li>
+        </ol>
+      </div>
+      <div class="tile say"><b>Sell three tiers, not one rug.</b><span>Budget natural fibre at $25 to $70 for Walmart, washable mid-range at $50 to $150 for Amazon, and a premium sustainable line above $150 direct. <span class="e">E1</span><span class="e">E7</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== B ============================== -->
+<section class="proto b" id="b">
+  <div class="wrap">
+    <div class="top"><span><b>market scout</b> / area_rug / US</span><span>13 claims, 7 sources, 0 misses</span></div>
+    <div class="hero">
+      <div>
+        <h1>Area<br>rug</h1>
+        <p>Shoppers buy online, expect washable, and pay very different prices depending on where they look.</p>
+      </div>
+      <div class="stage"><canvas class="product"></canvas></div>
+    </div>
+    <div class="rail">
+      <div><b>$137</b><span>Wayfair median <span class="e">E1</span></span></div>
+      <div><b>$61</b><span>Amazon median <span class="e">E1</span></span></div>
+      <div><b>$38</b><span>Walmart median <span class="e">E1</span></span></div>
+      <div><b>42%</b><span>prefer buying online <span class="e">E3</span></span></div>
+    </div>
+    <div class="grid">
+      <div class="tile"><h2>price range by retailer, usd</h2><div data-chart></div></div>
+      <div class="tile"><h2>most reviewed</h2>
+        <ol>
+          <li><b>Adrihana Machine Woven Abstract</b><em>$205</em><span>Wayfair, 14,722 reviews</span></li>
+          <li><b>Saidey Abstract Indoor Rug</b><em>$177</em><span>Wayfair, 12,631 reviews</span></li>
+          <li><b>Nefoso Shag, light brown</b><em>$27</em><span>Walmart, 9,300 reviews</span></li>
+        </ol>
+      </div>
+      <div class="tile say"><b>Sell three tiers, not one rug.</b><span>Budget natural fibre at $25 to $70 for Walmart, washable mid-range at $50 to $150 for Amazon, and a premium sustainable line above $150 direct. <span class="e">E1</span><span class="e">E7</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== C ============================== -->
+<section class="proto c" id="c">
+  <div class="wrap">
+    <div class="top"><span>Market Scout</span><span>United States, November 2026</span></div>
+    <h1>Area <i>rug</i></h1>
+    <p class="deck">Shoppers buy online, expect washable, and pay very different prices depending on where they look.</p>
+    <div class="cols">
+      <aside>
+        <div class="stage"><canvas class="product"></canvas></div>
+        <div class="note"><b>$137</b><span>median listing at Wayfair, the premium shelf</span></div>
+        <div class="note"><b>$61</b><span>median at Amazon, where most units sell</span></div>
+        <div class="note"><b>$38</b><span>median at Walmart, the budget shelf</span></div>
+        <div class="note"><b>42%</b><span>of US rug shoppers prefer to buy online</span></div>
+      </aside>
+      <article>
+        <h2>Three shelves, three prices</h2>
+        <p class="first">The same category sells at very different prices depending on the store. Wayfair's typical area rug lists at more than three times Walmart's, with Amazon in between. <span class="e">E1</span></p>
+        <figure><div data-chart></div><figcaption>Line: cheapest to most expensive listing. Box: the middle half. Tick: the median. Sizes are mixed, so medians are indicative.</figcaption></figure>
+        <p>Trend reports for 2025 and 2026 point to nature-inspired designs in wool, jute and recycled fibres, while the listings that actually collect reviews are machine-washable, vintage and shag. <span class="e">E2</span></p>
+        <blockquote>Sell three tiers, not one rug.</blockquote>
+        <p>Budget natural fibre at $25 to $70 for Walmart, washable mid-range at $50 to $150 for Amazon, and a premium sustainable line above $150 sold direct. <span class="e">E1</span><span class="e">E7</span></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="switch" role="group" aria-label="Choose a style">
+  <button data-go="a" aria-pressed="true">A Bento</button>
+  <button data-go="b" aria-pressed="false">B Night</button>
+  <button data-go="c" aria-pressed="false">C Magazine</button>
+</div>
+
+<script>
+// Real numbers from the area-rug run (Extern snapshot).
+const PRICES = [
+  { name: "Wayfair", min: 30, q1: 78, median: 137, q3: 218, max: 441 },
+  { name: "Amazon", min: 13, q1: 35, median: 61, q3: 75, max: 130 },
+  { name: "Walmart", min: 10, q1: 19, median: 38, q3: 55, max: 268 },
+];
+function priceChart() {
+  const W = 640, row = 78, L = 104, R = 58, H = PRICES.length * row + 30, max = 441;
+  const x = (v) => L + (v / max) * (W - L - R);
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Price ranges: Wayfair median 137 dollars, Amazon 61, Walmart 38">
+    <defs><pattern id="halftone" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="3" cy="3" r="1.7" fill="#171430"/></pattern></defs>
+    ${PRICES.map((p, i) => { const cy = i * row + 44;
+      return `<text class="who" x="0" y="${cy + 6}">${p.name}</text>
+        <line class="track" x1="${x(p.min)}" x2="${x(p.max)}" y1="${cy}" y2="${cy}"/>
+        <rect class="box ${i === 0 ? "lead" : ""}" x="${x(p.q1)}" y="${cy - 14}" width="${x(p.q3) - x(p.q1)}" height="28" rx="6"/>
+        <line class="med" x1="${x(p.median)}" x2="${x(p.median)}" y1="${cy - 19}" y2="${cy + 19}"/>
+        <text class="val" x="${x(p.median)}" y="${cy - 26}" text-anchor="middle">$${p.median}</text>
+        <text x="${x(p.max) + 8}" y="${cy + 5}">$${p.max}</text>`; }).join("")}
+    ${[0, 100, 200, 300, 400].map((v) => `<text x="${x(v)}" y="${H - 4}" text-anchor="middle">$${v}</text>`).join("")}</svg>`;
+}
+document.querySelectorAll("[data-chart]").forEach((el) => { el.innerHTML = priceChart(); });
+</script>
+
+<script type="module">
+import * as THREE from "three";
+
+// The same cel-shaded rug in every prototype.
+function mount(canvas) {
+  if (canvas.dataset.ready) return;
+  canvas.dataset.ready = "1";
+  const stage = canvas.parentElement, INK = 0x171430;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
+  camera.position.set(0, 0.5, 8.4); camera.lookAt(0, 0, 0);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.4); sun.position.set(-3, 4, 5); scene.add(sun);
+  const ramp = new THREE.DataTexture(new Uint8Array([110, 110, 110, 255, 190, 190, 190, 255, 255, 255, 255, 255]), 3, 1);
+  ramp.minFilter = ramp.magFilter = THREE.NearestFilter; ramp.needsUpdate = true;
+  const toon = (color, map) => new THREE.MeshToonMaterial({ color, map: map || null, gradientMap: ramp });
+  const c = document.createElement("canvas"); c.width = c.height = 512;
+  const g = c.getContext("2d");
+  g.fillStyle = "#f2385a"; g.fillRect(0, 0, 512, 512);
+  g.strokeStyle = "#ffd23f"; g.lineWidth = 26; g.strokeRect(44, 44, 424, 424);
+  g.fillStyle = "#2f5bff"; g.beginPath(); g.moveTo(256, 110); g.lineTo(402, 256); g.lineTo(256, 402); g.lineTo(110, 256); g.fill();
+  g.fillStyle = "#fffef8"; g.beginPath(); g.arc(256, 256, 54, 0, 7); g.fill();
+  const weave = new THREE.CanvasTexture(c); weave.colorSpace = THREE.SRGBColorSpace;
+  const model = new THREE.Group(), edge = toon(0xb81f3d);
+  const geo = new THREE.BoxGeometry(3.1, 0.09, 2.1);
+  const shell = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide }));
+  shell.scale.set(1 + 0.1 / 3.1, 1 + 0.1 / 0.09, 1 + 0.1 / 2.1);
+  model.add(shell, new THREE.Mesh(geo, [edge, edge, toon(0xffffff, weave), edge, edge, edge]));
+  model.rotation.set(0.78, -0.5, 0);
+  scene.add(model);
+  const resize = () => { const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  new ResizeObserver(resize).observe(stage); resize();
+  let drag = false, lastX = 0;
+  canvas.addEventListener("pointerdown", (e) => { drag = true; lastX = e.clientX; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener("pointermove", (e) => { if (drag) { model.rotation.y += (e.clientX - lastX) * 0.012; lastX = e.clientX; } });
+  canvas.addEventListener("pointerup", () => { drag = false; });
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  (function frame(t) {
+    model.position.y = still ? 0 : Math.sin(t / 620) * 0.14;
+    if (!drag && !still) model.rotation.y += 0.006;
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  })(0);
+}
+
+function show(id) {
+  document.querySelectorAll(".proto").forEach((s) => s.classList.toggle("on", s.id === id));
+  document.querySelectorAll(".switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.go === id)));
+  mount(document.querySelector(`#${id} canvas.product`));
+  window.scrollTo(0, 0);
+  history.replaceState(null, "", `#${id}`);
+}
+document.querySelectorAll(".switch button").forEach((b) => b.addEventListener("click", () => show(b.dataset.go)));
+show(["a", "b", "c"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "a");
+</script>
+</body>
+</html>
