@@ -17,11 +17,15 @@
     <polygon points="100,170 172,206 172,214 100,178" fill="#a8301d"/>
   </g>
   <g transform="rotate(10 306 84)"><circle cx="306" cy="84" r="46" fill="#d9432b" stroke="#1f1b2d" stroke-width="3"/><circle cx="306" cy="84" r="53" fill="none" stroke="#1f1b2d" stroke-width="2"/>
-    <text x="306" y="79" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#f1e7d0">Every claim</text>
-    <text x="306" y="101" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#f1e7d0">audited!</text></g>
-  <text x="400" y="98" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="30" fill="#d9432b">Market Scout &amp; Co. presents</text>
-  <text x="404" y="172" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="54" textLength="740" lengthAdjust="spacingAndGlyphs" fill="#f0b429">The Merchant's Catalogue</text>
-  <text x="400" y="168" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="54" textLength="740" lengthAdjust="spacingAndGlyphs" fill="#1f1b2d">The Merchant's Catalogue</text>
-  <text x="400" y="216" font-family="Georgia, 'Times New Roman', serif" font-size="27" fill="#1f1b2d">An agentic AI workflow for business</text>
-  <text x="400" y="252" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="19" fill="#1f1b2d">It plans the research, chooses its sources, footnotes every finding and checks its own work.</text>
+    <text x="306" y="79" text-anchor="middle" font-family="Georgia, 'Times New Roman', 'DejaVu Serif', serif" font-style="italic" font-size="18" fill="#f1e7d0">Every claim</text>
+    <text x="306" y="100" text-anchor="middle" font-family="Georgia, 'Times New Roman', 'DejaVu Serif', serif" font-style="italic" font-size="18" fill="#f1e7d0">audited!</text></g>
+  <g font-family="Georgia, 'Times New Roman', 'DejaVu Serif', serif" fill="#1f1b2d">
+    <text x="400" y="82" font-style="italic" font-size="24" fill="#d9432b">Market Scout &amp; Co. presents</text>
+    <g font-weight="bold" font-size="54">
+      <text x="404" y="144" fill="#f0b429">The Merchant's</text><text x="400" y="140">The Merchant's</text>
+      <text x="404" y="200" fill="#f0b429">Catalogue</text><text x="400" y="196">Catalogue</text>
+    </g>
+    <text x="400" y="236" font-size="23">An agentic AI workflow for business</text>
+    <text x="400" y="263" font-style="italic" font-size="15">It plans the research, chooses its sources, footnotes every finding and checks its own work.</text>
+  </g>
 </svg>

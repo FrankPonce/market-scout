@@ -28,7 +28,7 @@ footnoted, has a second model audit each claim against its source, and prints th
 result as a page from a vintage trade catalogue.
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'background':'#f1e7d0','primaryColor':'#fffaf0','primaryTextColor':'#1f1b2d','primaryBorderColor':'#1f1b2d','lineColor':'#d9432b','edgeLabelBackground':'#f1e7d0','fontFamily':'Georgia, serif'}}}%%
+%%{init: {'theme':'base','themeVariables':{'background':'#0d1117','primaryColor':'#161b22','primaryTextColor':'#e6edf3','primaryBorderColor':'#30363d','secondaryColor':'#161b22','tertiaryColor':'#0d1117','lineColor':'#f0b429','textColor':'#e6edf3','titleColor':'#e6edf3','clusterBkg':'#0d1117','clusterBorder':'#30363d','edgeLabelBackground':'#0d1117','fontFamily':'Segoe UI, Inter, sans-serif'}}}%%
 flowchart TB
     subgraph R ["🤖 Research loop: the agent decides each step"]
         direction LR
