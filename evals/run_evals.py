@@ -18,8 +18,8 @@ from marketscout.graph import run_agent, run_chain
 from marketscout.llm import get_llm
 
 HERE = Path(__file__).parent
-COLUMNS = ["mode", "claims", "unsupported_claims", "citation_coverage", "evidence",
-           "distinct_tools", "tool_errors", "revisions", "tokens", "seconds"]
+COLUMNS = ["mode", "claims", "citation_coverage", "supported", "partial", "not_supported",
+           "faithfulness", "evidence", "tool_errors", "revisions", "tokens", "seconds"]
 
 
 def main() -> None:

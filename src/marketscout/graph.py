@@ -1,6 +1,6 @@
 """The agent, as a LangGraph state machine.
 
-    plan -> research <-> tools -> write <-> critique -> END
+    plan -> research <-> tools -> write <-> critique -> judge -> END
 
 - plan:     turns "category + country" into research questions.
 - research: the LLM picks which tool to call next (this is the agentic part:
@@ -8,13 +8,14 @@
 - tools:    runs the calls; each success becomes a numbered piece of evidence.
 - write:    drafts the brief; every finding must cite evidence like [E2].
 - critique: checks every finding is cited, and sends the draft back if not.
+- judge:    reads each claim against the evidence it cites (see judge.py), and
+            sends the draft back once if any claim is not backed.
 
 `run_chain` is the v1 baseline: one prompt, no tools, like the original n8n chain.
 """
 from __future__ import annotations
 
 import json
-import re
 import time
 from typing import TypedDict
 
@@ -22,10 +23,15 @@ from langgraph.graph import END, START, StateGraph
 
 from . import extern  # noqa: F401  (registers the optional rug case-study tools)
 from . import tools as toolbox
+from .judge import CITATION, claim_lines, judge_claims, tally
 
 MAX_RESEARCH_STEPS = 8
 MAX_REVISIONS = 2
-CITATION = re.compile(r"[\[【](E\d+)[\]】]")   # [E1] or the full-width 【E1】 some models emit
+MAX_JUDGE_REWRITES = 1      # how many times the judge may send a draft back
+# Free model tiers cap tokens per minute, so long sources are trimmed in the prompts.
+# The full text stays in the evidence record.
+RESEARCH_CHARS = 900        # of each tool result echoed back to the researcher
+WRITER_CHARS = 1500         # of each piece of evidence shown to the writer
 
 
 class RunState(TypedDict, total=False):
@@ -41,23 +47,18 @@ class RunState(TypedDict, total=False):
     brief: str
     feedback: str
     revisions: int
+    verdicts: list[dict]        # the judge's ruling on each claim
+    judge_rewrites: int
 
 
 def check_citations(brief: str, evidence: list[dict]) -> dict:
-    """Every '- ' bullet outside 'Open questions' is a claim and needs a valid [E#]."""
+    """Every claim needs a citation to evidence that exists. Says nothing about accuracy."""
     known = {e["id"] for e in evidence}
-    claims, unsupported, exempt = 0, [], False
-    for line in brief.splitlines():
-        line = line.strip()
-        if line.startswith("#"):
-            exempt = "open questions" in line.lower()
-        elif line.startswith("- ") and not exempt:
-            claims += 1
-            cited = CITATION.findall(line)
-            if not cited or any(c not in known for c in cited):
-                unsupported.append(line)
-    return {"claims": claims, "unsupported": unsupported,
-            "coverage": (claims - len(unsupported)) / claims if claims else 0.0}
+    lines = claim_lines(brief)
+    unsupported = [line for line in lines
+                   if not CITATION.findall(line) or any(c not in known for c in CITATION.findall(line))]
+    return {"claims": len(lines), "unsupported": unsupported,
+            "coverage": (len(lines) - len(unsupported)) / len(lines) if lines else 0.0}
 
 
 def build_graph(llm):
@@ -80,8 +81,10 @@ def build_graph(llm):
         messages = [
             {"role": "system", "content":
                 "You are a market researcher. Use the tools to gather evidence for the "
-                "questions. Call one tool at a time. Start with the structured data tools "
-                "(statistics, interest, catalogues) and try each relevant one. Only fetch a "
+                "questions. Call one tool at a time. First call EVERY structured data tool "
+                "that applies to this category and country (prices, catalogues, statistics, "
+                "interest, social trends), one after another; only then use web search to "
+                "fill gaps. Only fetch a "
                 "URL that a tool result gave you; never guess or invent URLs. If a tool "
                 "fails, try a different angle, such as a related or competing product. "
                 "When you have enough evidence, or tools stop helping, reply 'Research complete.'"},
@@ -91,7 +94,7 @@ def build_graph(llm):
         ]
         return {"questions": questions, "messages": messages, "evidence": [],
                 "research_steps": 0, "tool_calls": 0, "tool_errors": 0,
-                "tool_log": [], "revisions": 0}
+                "tool_log": [], "revisions": 0, "judge_rewrites": 0}
 
     def research(state: RunState) -> dict:
         reply = llm.chat("researcher", state["messages"], tools=toolbox.available_schemas(),
@@ -115,7 +118,7 @@ def build_graph(llm):
                 result = toolbox.call_tool(name, args)
                 item = {"id": f"E{len(evidence) + 1}", "tool": name, "args": args, **result}
                 evidence.append(item)
-                content = f"[{item['id']}] {item['summary']}\nsource: {item['source']}"
+                content = f"[{item['id']}] {item['summary'][:RESEARCH_CHARS]}\nsource: {item['source']}"
                 log.append({"tool": name, "args": raw_args, "ok": True, "detail": item["id"]})
             except Exception as e:  # report the failure back so the agent can adapt
                 errors += 1
@@ -127,7 +130,7 @@ def build_graph(llm):
                 "tool_calls": calls, "tool_errors": errors, "tool_log": log}
 
     def write(state: RunState) -> dict:
-        evidence_text = "\n".join(f"[{e['id']}] ({e['tool']}) {e['summary']}"
+        evidence_text = "\n".join(f"[{e['id']}] ({e['tool']}) {e['summary'][:WRITER_CHARS]}"
                                   for e in state["evidence"]) or "(no evidence gathered)"
         prompt = (
             f"Write a market brief on {state['category']} in {state['country']} in Markdown.\n"
@@ -156,7 +159,25 @@ def build_graph(llm):
                             "them to Open questions:\n" + "\n".join(check["unsupported"])}
 
     def after_critique(state: RunState) -> str:
-        return "write" if state["feedback"] and state["revisions"] <= MAX_REVISIONS else END
+        if state["feedback"] and state["revisions"] <= MAX_REVISIONS:
+            return "write"
+        return "judge"
+
+    def judge(state: RunState) -> dict:
+        """Read each claim against its evidence; send the draft back once if any fail."""
+        verdicts = judge_claims(llm, state["brief"], state["evidence"])
+        failed = [v for v in verdicts if v["verdict"] == "unsupported"]
+        if not failed or state["judge_rewrites"] >= MAX_JUDGE_REWRITES:
+            return {"verdicts": verdicts, "feedback": ""}
+        return {"verdicts": verdicts, "judge_rewrites": state["judge_rewrites"] + 1,
+                "revisions": state["revisions"] + 1,
+                "feedback": "An independent check found these claims are NOT backed by the "
+                            "evidence they cite. Rewrite each to say only what the evidence "
+                            "states, or move it to Open questions:\n"
+                            + "\n".join(f"- {v['claim']} (problem: {v['reason']})" for v in failed)}
+
+    def after_judge(state: RunState) -> str:
+        return "write" if state["feedback"] else END
 
     g = StateGraph(RunState)
     g.add_node("plan", plan)
@@ -169,7 +190,9 @@ def build_graph(llm):
     g.add_conditional_edges("research", after_research, {"tools": "tools", "write": "write"})
     g.add_edge("tools", "research")
     g.add_edge("write", "critique")
-    g.add_conditional_edges("critique", after_critique, {"write": "write", END: END})
+    g.add_node("judge", judge)
+    g.add_conditional_edges("critique", after_critique, {"write": "write", "judge": "judge"})
+    g.add_conditional_edges("judge", after_judge, {"write": "write", END: END})
     return g.compile()
 
 
@@ -189,15 +212,18 @@ def run_chain(llm, category: str, country: str) -> dict:
         context={"category": category, "country": country.upper()})
     state = {"category": category, "country": country.upper(), "brief": reply["content"] or "",
              "evidence": [], "tool_calls": 0, "tool_errors": 0, "revisions": 0}
+    state["verdicts"] = judge_claims(llm, state["brief"], [])    # nothing cited: no model call
     return _finish(state, llm, "chain", started)
 
 
 def _finish(state: dict, llm, mode: str, started: float) -> dict:
     check = check_citations(state["brief"], state["evidence"])
+    state.setdefault("verdicts", [])
     state["metrics"] = {
         "mode": mode, "llm": llm.name,
         "claims": check["claims"], "unsupported_claims": len(check["unsupported"]),
         "citation_coverage": round(check["coverage"], 2),
+        **tally(state["verdicts"]),
         "evidence": len(state["evidence"]),
         "distinct_tools": len({e["tool"] for e in state["evidence"]}),
         "tool_calls": state["tool_calls"], "tool_errors": state["tool_errors"],

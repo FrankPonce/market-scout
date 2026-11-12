@@ -150,6 +150,8 @@ a { color: inherit; }
 .slips .arg { display: block; font-style: italic; overflow-wrap: anywhere; }
 .stamp { display: inline-block; margin-top: 10px; font-family: var(--label); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: .74rem; border: 2px solid; border-radius: 3px; padding: 2px 7px 1px; transform: rotate(-5deg); text-decoration: none; }
 .stamp.ok { color: var(--teal); } .stamp.no { color: var(--red); }
+.ruling { display: inline-block; margin-left: 6px; font-family: var(--label); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; font-size: .64rem; line-height: 1.5; border: 1.5px solid; border-radius: 3px; padding: 0 5px; transform: rotate(-3deg); cursor: help; white-space: nowrap; }
+.ruling.part { color: #8a5a00; } .ruling.not { color: var(--red); }
 .slips .why { display: block; margin-top: 8px; font-size: .8rem; }
 
 /* fine print */
@@ -222,6 +224,8 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const money = (v) => "$" + Math.round(v).toLocaleString("en");
 const fn = (ids) => [...new Set(ids)].map((id) => `<a class="fn" href="#${id}" title="See the source">${id.slice(1)}</a>`).join("");
+// The judge's ruling on a claim; fully backed claims stay unmarked.
+const ruling = (c) => c.verdict === "partial" ? `<span class="ruling part" title="${esc(c.reason || "")}">Partly backed</span>` : c.verdict === "unsupported" ? `<span class="ruling not" title="${esc(c.reason || "")}">Not backed</span>` : "";
 const INK = "#1f1b2d", RED = "#d9432b", MUSTARD = "#f0b429", PAPER2 = "#e9dcc0";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const TOOL_NAMES = { wikipedia_interest: "Wikipedia interest", eurostat_online_shopping: "Eurostat online shopping", open_food_catalogue: "Open Food Facts brands", web_search: "Web search", fetch_page: "Read a web page", retail_price_comparison: "Retailer price comparison", social_trends: "Social media trends", trend_articles: "Trend articles" };
@@ -262,12 +266,13 @@ $("art").innerHTML = `<svg class="art" viewBox="0 0 200 200" role="img" aria-lab
 
 /* ---------- the pitch ---------- */
 const S = RUN.sections, m = RUN.metrics;
+const audited = (m.supported || 0) + (m.partial || 0) + (m.not_supported || 0);
 document.title = `${cap(RUN.category)} in ${RUN.countryName} | The Merchant's Catalogue`;
 $("title").textContent = cap(RUN.category);
 $("place").textContent = RUN.tagline || `in ${RUN.countryName}`;
 $("issue").textContent = `${RUN.countryName.replace(/^the /, "")}, ${new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
 if (RUN.outline) $("outline").outerHTML = `<svg viewBox="0 0 ${RUN.outline.w} ${RUN.outline.h}" role="img" aria-label="Outline of ${esc(RUN.countryName)}"><path d="${RUN.outline.path}"/></svg>`;
-$("item").innerHTML = [`Cat. No. ${RUN.category.split(" ").map((w) => w[0]).join("").toUpperCase()}-${RUN.country}-${String(new Date().getFullYear()).slice(2)}`, `${m.claims} findings`, `${RUN.evidence.length} sources`].map((t) => `<span>${esc(t)}</span>`).join("");
+$("item").innerHTML = [`Cat. No. ${RUN.category.split(" ").map((w) => w[0]).join("").toUpperCase()}-${RUN.country}-${String(new Date().getFullYear()).slice(2)}`, `${m.claims} findings`, `${RUN.evidence.length} sources`, ...(audited ? [`${m.supported} of ${audited} verified`] : [])].map((t) => `<span>${esc(t)}</span>`).join("");
 $("summary").innerHTML = (S.summary || []).map((p) => `<p class="copy">${esc(p.text)}${fn(p.cites)}</p>`).join("");
 $("seal").innerHTML = `${RUN.evidence.length} sources<br>checked!`;
 
@@ -348,7 +353,7 @@ function bestSellers(d) {
 
 /* ---------- sections ---------- */
 const findings = S.findings || [], used = new Set();
-const remarks = (id) => findings.filter((f, i) => f.cites.includes(id) && !used.has(i) && used.add(i)).map((f) => `<p>${esc(f.text)}${fn(f.cites)}</p>`).join("");
+const remarks = (id) => findings.filter((f, i) => f.cites.includes(id) && !used.has(i) && used.add(i)).map((f) => `<p>${esc(f.text)}${fn(f.cites)}${ruling(f)}</p>`).join("");
 const ribbon = (title, aside) => `<div class="ribbon"><h2>${esc(title)}</h2><i></i>${aside ? `<span>${esc(aside)}</span>` : ""}</div>`;
 const spread = (chart, id, note, narrow) => `<section class="spread ${narrow ? "narrow" : ""}"><div>${chart}<p class="smallprint">${note}${fn([id])}</p></div><div class="remarks">${remarks(id)}</div></section>`;
 
@@ -373,17 +378,17 @@ for (const e of RUN.evidence) {
 
 const rest = findings.filter((_, i) => !used.has(i));
 const photo = RUN.photo ? `<figure class="photo"><div class="said">From the archives!</div><div class="frame"><img alt="${esc(RUN.photo.title)}" src="${esc(RUN.photo.url)}" loading="lazy"></div><figcaption>${esc(RUN.photo.title)}. ${esc(RUN.photo.credit)}. <a href="${esc(RUN.photo.page)}" target="_blank" rel="noopener">Wikimedia Commons</a>.</figcaption></figure>` : "";
-if (rest.length || photo) html += ribbon("Also worth knowing", "") + `<section class="noted ${photo && rest.length ? "" : "solo"}">${rest.length ? `<ol>${rest.map((f) => `<li>${esc(f.text)}${fn(f.cites)}</li>`).join("")}</ol>` : ""}${photo}</section>`;
+if (rest.length || photo) html += ribbon("Also worth knowing", "") + `<section class="noted ${photo && rest.length ? "" : "solo"}">${rest.length ? `<ol>${rest.map((f) => `<li>${esc(f.text)}${fn(f.cites)}${ruling(f)}</li>`).join("")}</ol>` : ""}${photo}</section>`;
 
-if ((S.risks || []).length) html += `<section class="caution"><h2>Mind these risks</h2><ul>${S.risks.map((r) => `<li>${esc(r.text)}${fn(r.cites)}</li>`).join("")}</ul></section>`;
-if ((S.recommendations || []).length) html += `<section class="coupon"><div><p class="advice">Clip and keep</p><h2>Our advice to the merchant</h2></div><ol>${S.recommendations.map((r) => `<li><span>${esc(r.text)}${fn(r.cites)}</span></li>`).join("")}</ol></section>`;
+if ((S.risks || []).length) html += `<section class="caution"><h2>Mind these risks</h2><ul>${S.risks.map((r) => `<li>${esc(r.text)}${fn(r.cites)}${ruling(r)}</li>`).join("")}</ul></section>`;
+if ((S.recommendations || []).length) html += `<section class="coupon"><div><p class="advice">Clip and keep</p><h2>Our advice to the merchant</h2></div><ol>${S.recommendations.map((r) => `<li><span>${esc(r.text)}${fn(r.cites)}${ruling(r)}</span></li>`).join("")}</ol></section>`;
 if ((S.open || []).length) html += ribbon("What we could not find out", "") + `<ul class="unknown">${S.open.map((o) => `<li>${esc(o.text)}</li>`).join("")}</ul>`;
 
 const misses = RUN.toolLog.filter((t) => !t.ok).length;
 const shortArgs = (raw) => { try { return Object.values(JSON.parse(raw)).join(", "); } catch { return raw; } };
 const why = (d) => /404/.test(d) ? "Page not found" : /robots/.test(d) ? "Site asks robots to stay out" : /no .*article|No Wikipedia/i.test(d) ? "No matching article" : /No Open Food Facts/.test(d) ? "No products listed" : /503|Timeout|timed out/i.test(d) ? "Service did not answer" : d.replace(/^\w+Error: /, "").slice(0, 70);
 html += ribbon("How this report was compiled", "the agent's enquiries, in order")
-  + `<p class="tally">${m.claims} findings, ${m.unsupported_claims ? `${m.unsupported_claims} of them without a source` : "every one with a source"}. ${RUN.toolLog.length} enquiries sent, ${misses ? `${misses} returned empty` : "none returned empty"}.</p>
+  + `<p class="tally">${m.claims} findings, ${m.unsupported_claims ? `${m.unsupported_claims} of them without a source` : "every one with a source"}. ${RUN.toolLog.length} enquiries sent, ${misses ? `${misses} returned empty` : "none returned empty"}.${audited ? ` A second reading of each finding against its source found ${m.supported} fully backed, ${m.partial} partly backed and ${m.not_supported} not backed; the last two kinds are stamped where they appear.` : ""}</p>
   <ol class="slips">${RUN.toolLog.map((t) => `<li><b>${esc(TOOL_NAMES[t.tool] || t.tool)}</b><span class="arg">${esc(shortArgs(t.args).slice(0, 90))}</span>
     ${t.ok ? `<a class="stamp ok" href="#${t.detail}">Received, note ${t.detail.slice(1)}</a>` : `<span class="stamp no">Returned empty</span><span class="why">${esc(why(t.detail))}</span>`}</li>`).join("")}</ol>`;
 $("sections").innerHTML = html;

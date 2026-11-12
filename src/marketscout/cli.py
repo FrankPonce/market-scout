@@ -21,7 +21,7 @@ def save_run(state: dict, out_dir: Path) -> Path:
                         for e in state["evidence"])
     (folder / "brief.md").write_text(
         state["brief"] + ("\n\n## Evidence\n" + sources if sources else "") + "\n", encoding="utf-8")
-    keep = {k: state.get(k) for k in ("category", "country", "questions", "brief", "evidence", "tool_log", "metrics")}
+    keep = {k: state.get(k) for k in ("category", "country", "questions", "brief", "evidence", "verdicts", "tool_log", "metrics")}
     (folder / "run.json").write_text(json.dumps(keep, indent=2, ensure_ascii=False), encoding="utf-8")
     return folder
 

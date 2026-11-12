@@ -78,19 +78,33 @@ def _clean(text: str) -> dict:
     return {"text": text, "cites": cites}
 
 
-def parse_brief(brief: str) -> dict:
-    """Split the Markdown brief into its sections."""
+def parse_brief(brief: str, verdicts: list[dict] | None = None) -> dict:
+    """Split the Markdown brief into its sections, attaching the judge's ruling to each claim."""
+    verdicts, n, exempt = verdicts or [], 0, False
+
+    def ruled(item: dict) -> dict:
+        nonlocal n
+        if n < len(verdicts):       # same order as judge.claim_lines
+            item.update(verdict=verdicts[n]["verdict"], reason=verdicts[n]["reason"])
+        n += 1
+        return item
+
     sections = {"summary": [], "findings": [], "risks": [], "recommendations": [], "open": []}
     current = None
     for line in brief.splitlines():
         line = line.strip()
         if line.startswith("#"):
             title = line.lstrip("# ").lower()
+            exempt = "open questions" in title
             current = next((key for word, key in (("summar", "summary"), ("finding", "findings"),
                                                   ("risk", "risks"), ("recommend", "recommendations"),
                                                   ("open", "open")) if word in title), None)
+        elif line.startswith("- ") and not exempt:
+            item = ruled(_clean(line[2:]))
+            if current:
+                sections[current].append(item)
         elif current == "summary" and line:
-            sections["summary"].append(_clean(line.removeprefix("- ")))
+            sections["summary"].append(_clean(line))
         elif line.startswith("- ") and current:
             sections[current].append(_clean(line[2:]))
     return sections
@@ -137,7 +151,7 @@ def build(run_dir: Path) -> Path:
         "tagline": tagline(country, pick_shape(run["category"])),
         "photo": stock_photo(run["category"]),
         "questions": run.get("questions", []),
-        "sections": parse_brief(run.get("brief", "")),
+        "sections": parse_brief(run.get("brief", ""), run.get("verdicts")),
         "evidence": [{**e, "summary": e["summary"][:420]} for e in run.get("evidence", [])],
         "toolLog": run.get("tool_log", []),
         "metrics": run["metrics"],

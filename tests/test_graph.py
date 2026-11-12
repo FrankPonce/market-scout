@@ -3,6 +3,7 @@ import pytest
 
 from marketscout import tools as toolbox
 from marketscout.graph import check_citations, run_agent, run_chain
+from marketscout.judge import judge_claims, tally
 from marketscout.llm import OfflineLLM
 from marketscout.tools import summarise_eurostat, summarise_pageviews
 
@@ -63,3 +64,41 @@ def test_full_width_citation_brackets_count():
     brief = "## Findings\n- cited 【E1】【E2】"
     check = check_citations(brief, [{"id": "E1"}, {"id": "E2"}])
     assert check["claims"] == 1 and not check["unsupported"]
+
+
+class JudgingLLM(OfflineLLM):
+    """Rules the first claim unsupported on the first audit, then passes everything."""
+    audits = 0
+    def chat(self, role, messages, **kw):
+        if role == "judge":
+            self.audits += 1
+            n = kw["context"]["claims"]
+            rulings = [{"n": i, "verdict": "supported", "reason": "stated"} for i in range(1, n + 1)]
+            if self.audits == 1:
+                rulings[0] = {"n": 1, "verdict": "unsupported", "reason": "number not in evidence"}
+            import json
+            return {"role": "assistant", "content": json.dumps({"verdicts": rulings})}
+        return super().chat(role, messages, **kw)
+
+
+def test_judge_sends_an_unbacked_claim_back_once(fake_tools):
+    llm = JudgingLLM()
+    state = run_agent(llm, "oat milk", "FI")
+    m = state["metrics"]
+    assert llm.audits == 2 and m["revisions"] == 1
+    assert m["supported"] == m["claims"] == 2 and m["not_supported"] == 0 and m["faithfulness"] == 1.0
+
+
+def test_uncited_claims_are_unsupported_without_a_model_call():
+    llm = OfflineLLM()
+    verdicts = judge_claims(llm, "## Findings\n- no citation\n- bad id [E9]", [{"id": "E1", "summary": "x"}])
+    assert [v["verdict"] for v in verdicts] == ["unsupported", "unsupported"] and llm.usage["calls"] == 0
+    assert run_chain(OfflineLLM(), "oat milk", "FI")["metrics"]["not_supported"] == 2
+
+
+def test_judge_ignores_malformed_rulings():
+    class Garbled(OfflineLLM):
+        def chat(self, role, messages, **kw):
+            return {"role": "assistant", "content": '{"verdicts": [{"n": 9, "verdict": "supported"}, {"n": 1, "verdict": "maybe"}]}'}
+    verdicts = judge_claims(Garbled(), "## Findings\n- a claim [E1]", [{"id": "E1", "summary": "x"}])
+    assert verdicts[0]["verdict"] == "unchecked" and tally(verdicts)["faithfulness"] is None
