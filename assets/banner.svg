@@ -20,8 +20,8 @@
     <text x="306" y="79" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#f1e7d0">Every claim</text>
     <text x="306" y="101" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#f1e7d0">audited!</text></g>
   <text x="400" y="98" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="30" fill="#d9432b">Market Scout &amp; Co. presents</text>
-  <text x="404" y="172" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="66" fill="#f0b429">The Merchant's Catalogue</text>
-  <text x="400" y="168" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="66" fill="#1f1b2d">The Merchant's Catalogue</text>
+  <text x="404" y="172" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="54" textLength="740" lengthAdjust="spacingAndGlyphs" fill="#f0b429">The Merchant's Catalogue</text>
+  <text x="400" y="168" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="54" textLength="740" lengthAdjust="spacingAndGlyphs" fill="#1f1b2d">The Merchant's Catalogue</text>
   <text x="400" y="216" font-family="Georgia, 'Times New Roman', serif" font-size="27" fill="#1f1b2d">An agentic AI workflow for business</text>
   <text x="400" y="252" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="19" fill="#1f1b2d">It plans the research, chooses its sources, footnotes every finding and checks its own work.</text>
 </svg>

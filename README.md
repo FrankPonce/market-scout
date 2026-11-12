@@ -29,16 +29,22 @@ result as a page from a vintage trade catalogue.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'background':'#f1e7d0','primaryColor':'#fffaf0','primaryTextColor':'#1f1b2d','primaryBorderColor':'#1f1b2d','lineColor':'#d9432b','edgeLabelBackground':'#f1e7d0','fontFamily':'Georgia, serif'}}}%%
-flowchart LR
-    Q([🛒 Category<br/>+ country]) --> A[🧭 Plan<br/>research questions]
-    A --> B[🔎 Research<br/>agent picks a tool]
-    B <--> C[🧰 Tools<br/>prices · brands · trends · web]
-    B --> D[✍️ Write<br/>footnoted brief]
-    D --> E{🧐 Critique<br/>every claim cited?}
-    E -- no --> D
-    E -- yes --> F{⚖️ Judge<br/>claim matches source?}
-    F -- no, once --> D
-    F -- yes --> G[📰 Print<br/>merchant's catalogue]
+flowchart TB
+    subgraph R ["🤖 Research loop: the agent decides each step"]
+        direction LR
+        Q([🛒 Category<br/>+ country]) --> A[🧭 Plan<br/>research questions]
+        A --> B[🔎 Research<br/>agent picks a tool]
+        B <-->|calls, adapts<br/>on failure| C[🧰 Tools<br/>prices · brands<br/>trends · web]
+    end
+    subgraph W ["✅ Write and check: nothing printed unchecked"]
+        direction LR
+        D[✍️ Write<br/>footnoted brief] --> E{🧐 Critique<br/>every claim<br/>cited?}
+        E -- no --> D
+        E -- yes --> F{⚖️ Judge<br/>claim matches<br/>its source?}
+        F -- "no, rewrite once" --> D
+        F -- yes --> G[📰 Print<br/>merchant's<br/>catalogue]
+    end
+    R -- research complete --> W
 ```
 
 | | |
