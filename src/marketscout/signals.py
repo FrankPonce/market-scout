@@ -10,14 +10,30 @@ library, which can be rate-limited or break when Google changes its site.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import statistics
 import time
 import urllib.robotparser
+from pathlib import Path
 
 from .tools import USER_AGENT, _COUNTRY, _STR, _country, http, tool
 
 _LIST = {"type": "array", "items": {"type": "string"}}
+CACHE = Path(".marketscout_cache")     # Google rate-limits Trends hard, so answers are kept for a day
+CACHE_SECONDS = 24 * 3600
+
+
+def _cached(key: str, fetch):
+    path = CACHE / (hashlib.sha1(key.encode()).hexdigest()[:20] + ".json")
+    if path.exists() and time.time() - path.stat().st_mtime < CACHE_SECONDS:
+        return json.loads(path.read_text(encoding="utf-8"))
+    value = fetch()
+    CACHE.mkdir(exist_ok=True)
+    path.write_text(json.dumps(value), encoding="utf-8")
+    return value
+
+
 SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "SEK": "kr ", "DKK": "kr ", "NOK": "kr "}
 
 
@@ -30,8 +46,10 @@ def _as_list(value) -> list[str]:
 
 @tool("Google Trends: compare how much people in a country search for up to 5 terms, year "
       "by year over five years, plus the fastest-rising related searches. Best single "
-      "measure of consumer demand. To compare concepts, put one term for each in the same "
-      "call. Set clothing_only true for fashion terms, to exclude unrelated meanings.",
+      "measure of consumer demand. Terms must be SHORT keywords or brand names people "
+      "really type (one or two words, e.g. 'y2k', 'streetwear', 'Supreme'), never a long "
+      "description. To compare concepts, put a keyword for each in the same call. Set "
+      "clothing_only true for fashion terms, to exclude unrelated meanings.",
       {"terms": {**_LIST, "description": "1 to 5 search terms, e.g. ['y2k', 'streetwear']"},
        "country": _COUNTRY,
        "clothing_only": {"type": "boolean", "description": "Count only searches in the Apparel category"}})
@@ -42,20 +60,37 @@ def search_trends(terms, country: str, clothing_only: bool = False) -> dict:
     terms = _as_list(terms)[:5]
     if not terms:
         raise ValueError("Give at least one search term")
-    trends = TrendReq(hl="en-US", tz=0)
-    trends.build_payload(terms, geo=country.upper(), timeframe="today 5-y", cat=68 if clothing_only else 0)
-    frame = trends.interest_over_time()
-    if frame.empty:
-        raise LookupError(f"Google Trends has too little data for {terms} in {country}")
-    yearly = frame.drop(columns="isPartial").groupby(frame.index.year).mean().round(1)
-    points = [[str(year), *[float(row[t]) for t in terms]] for year, row in yearly.iterrows()]
-    rising = []
-    try:
-        related = trends.related_queries().get(terms[0], {}).get("rising")
-        if related is not None:
-            rising = [str(q) for q in related["query"][:6]]
-    except Exception:
-        pass        # related searches are a bonus
+    category = 68 if clothing_only else 0
+
+    def fetch() -> dict:
+        for attempt in range(3):
+            try:
+                trends = TrendReq(hl="en-US", tz=0, timeout=(5, 25))
+                trends.build_payload(terms, geo=country.upper(), timeframe="today 5-y", cat=category)
+                frame = trends.interest_over_time()
+                break
+            except Exception as e:
+                if "429" not in str(e) or attempt == 2:
+                    raise
+                time.sleep(20 * (attempt + 1))      # rate limited: back off and retry
+        if frame.empty:
+            raise LookupError(f"Google Trends has too little data for {terms} in {country}")
+        yearly = frame.drop(columns="isPartial").groupby(frame.index.year).mean().round(1)
+        if float(yearly.to_numpy().max()) < 1:
+            raise LookupError(f"Almost nobody in {country} searches for {terms}. Use shorter, more common "
+                              "keywords or brand names (one or two words each).")
+        rising = []
+        try:
+            related = trends.related_queries().get(terms[0], {}).get("rising")
+            if related is not None:
+                rising = [str(q) for q in related["query"][:6]]
+        except Exception:
+            pass        # related searches are a bonus
+        return {"points": [[str(year), *[float(row[t]) for t in terms]] for year, row in yearly.iterrows()],
+                "rising": rising}
+
+    found = _cached(f"trends|{country.upper()}|{category}|{'|'.join(terms)}", fetch)
+    points, rising = found["points"], found["rising"]
     return {"source": "https://trends.google.com/trends/explore?date=today%205-y&geo="
                       f"{country.upper()}&q={','.join(terms).replace(' ', '%20')}",
             "summary": summarise_trends(terms, country.upper(), points, clothing_only, rising),
@@ -93,7 +128,8 @@ def search_suggestions(query: str, country: str) -> dict:
 
 @tool("Competitor prices: read the public product feed of online shops (works for shops "
       "built on Shopify, which most independent brands are) and report how many matching "
-      "products each sells and at what price. Give the shops' web domains.",
+      "products each sells and at what price. Give the shops' web domains; if you do not "
+      "know the competitors' domains, find them with web_search first.",
       {"domains": {**_LIST, "description": "Shop domains, e.g. ['makia.com', 'billebeino.com']"},
        "product_word": {**_STR, "description": "Word that must appear in the product name or type, e.g. 'tee'"}})
 def store_prices(domains, product_word: str) -> dict:
@@ -148,7 +184,8 @@ def store_prices(domains, product_word: str) -> dict:
 def youtube_search(query: str) -> dict:
     import yt_dlp
 
-    options = {"quiet": True, "no_warnings": True, "extract_flat": True, "skip_download": True}
+    options = {"quiet": True, "no_warnings": True, "extract_flat": True, "skip_download": True,
+               "socket_timeout": 15, "retries": 1}
     with yt_dlp.YoutubeDL(options) as ydl:
         entries = (ydl.extract_info(f"ytsearch12:{query}", download=False) or {}).get("entries") or []
     videos = [{"title": (e.get("title") or "")[:80], "views": int(e.get("view_count") or 0),

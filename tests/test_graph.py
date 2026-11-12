@@ -133,3 +133,24 @@ def test_mcp_server_lists_and_calls_tools(monkeypatch):
     names, bad = asyncio.run(session())
     assert {"research_market", "search_trends", "store_prices", "wikipedia_interest"} <= set(names)
     assert bad.is_error and "Unsupported country" in bad.content[0].text
+
+
+def test_text_sent_in_parts_is_joined(monkeypatch):
+    """Mistral can return content as a list of parts; the rest of the code expects a string."""
+    import httpx
+    from marketscout.llm import ChatLLM
+    monkeypatch.setenv("GROQ_API_KEY", "test")
+    for other in ("MISTRAL_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.delenv(other, raising=False)
+    reply = {"choices": [{"message": {"role": "assistant", "content": [
+        {"type": "thinking", "thinking": "hm"}, {"type": "text", "text": "## Findings"}, {"type": "text", "text": " ok"}]}}]}
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: httpx.Response(200, json=reply, request=httpx.Request("POST", "https://x")))
+    assert ChatLLM().chat("writer", [{"role": "user", "content": "hi"}])["content"] == "## Findings ok"
+
+
+def test_trend_answers_are_cached(tmp_path, monkeypatch):
+    from marketscout import signals
+    monkeypatch.setattr(signals, "CACHE", tmp_path / "cache")
+    calls = []
+    fetch = lambda: calls.append(1) or {"points": [["2026", 5.0]], "rising": []}
+    assert signals._cached("k", fetch) == signals._cached("k", fetch) and len(calls) == 1

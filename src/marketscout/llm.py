@@ -73,7 +73,12 @@ class ChatLLM:
                     data = r.json()
                     self.usage["calls"] += 1
                     self.usage["tokens"] += (data.get("usage") or {}).get("total_tokens", 0)
-                    return data["choices"][0]["message"]
+                    message = data["choices"][0]["message"]
+                    if isinstance(message.get("content"), list):    # some providers send text in parts
+                        message["content"] = "".join(
+                            part.get("text", "") for part in message["content"]
+                            if isinstance(part, dict) and part.get("type", "text") == "text")
+                    return message
                 except Exception as e:  # a broken provider: try the next one
                     last_error = e
             if wait is None:            # every provider failed outright or is out for the day

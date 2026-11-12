@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import json
 import re
 import sys
@@ -39,6 +40,8 @@ def main() -> None:
     p.add_argument("--out", default="runs", type=Path)
     args = p.parse_args()
 
+    logging.basicConfig(level=logging.INFO, format="  %(message)s", stream=sys.stderr)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     llm = get_llm(args.offline)
     if llm.name == "offline":
         print("[offline demo mode: scripted LLM, real data tools]", file=sys.stderr)

@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from typing import TypedDict
 
@@ -27,6 +28,7 @@ from . import tools as toolbox
 from .judge import CITATION, claim_lines, judge_claims, tally
 
 MAX_RESEARCH_STEPS = 10
+progress = logging.getLogger("marketscout")     # the command line prints this as live progress
 MIN_EVIDENCE_CHARS = 60     # shorter than this means a paywall or a script-only page
 MAX_REVISIONS = 2
 MAX_JUDGE_REWRITES = 1      # how many times the judge may send a draft back
@@ -71,7 +73,9 @@ def versus_note(state: dict) -> str:
     a, b = state["category"], state["versus"]
     return (f"\nThis is a HEAD-TO-HEAD comparison of two concepts a seller is choosing between: "
             f"'{a}' versus '{b}'. Gather the same kinds of evidence for both; where a tool takes "
-            "several terms or shops, cover both concepts in one call. Compare them on demand, "
+            "several terms or shops, cover both concepts in one call. Break each concept into "
+            "the short keywords and the brand names that stand for it, and research those. "
+            "Compare them on demand, "
             "competition and price. The summary must say which concept the evidence favours and "
             "how strongly, or that the evidence cannot separate them.")
 
@@ -82,30 +86,43 @@ def build_graph(llm):
                 "evidence": state.get("evidence", [])}
 
     def plan(state: RunState) -> dict:
+        progress.info("step  plan")
         reply = llm.chat("planner", [
             {"role": "system", "content":
-                "You plan market research. Reply with JSON: {\"questions\": [3 to 5 short, "
-                "answerable research questions]}."},
+                "You plan market research for a seller. Reply with JSON: {\"questions\": [3 to 5 "
+                "short, answerable research questions], \"keywords\": [3 to 6 search keywords or "
+                "brand names that shoppers really type, ONE OR TWO WORDS each, covering every "
+                "concept], \"shops\": [up to 6 web domains of competing BRANDS' OWN web shops, some "
+                "local to the country and some international, covering every concept, e.g. "
+                "'makia.com'. Never marketplaces or big retailers such as Zalando, ASOS or Amazon]}."},
             {"role": "user", "content":
                 f"Product category: {state['category']}\nTarget country: {state['country']}" + versus_note(state)},
         ], json_mode=True, context=ctx(state))
         try:
-            questions = json.loads(reply["content"])["questions"]
+            planned = json.loads(reply["content"])
+            questions = planned["questions"]
         except (json.JSONDecodeError, KeyError, TypeError):
+            planned = {}
             questions = [f"What is the market outlook for {state['category']} in {state['country']}?"]
+        leads = ""
+        if planned.get("keywords"):
+            leads += "\nSearch keywords to try: " + ", ".join(map(str, planned["keywords"][:6]))
+        if planned.get("shops"):
+            leads += "\nCompeting shops to price-check: " + ", ".join(map(str, planned["shops"][:6]))
         messages = [
             {"role": "system", "content":
                 "You are a market researcher. Use the tools to gather evidence for the "
                 "questions. Call one tool at a time. First call EVERY structured data tool "
                 "that applies to this category and country (prices, catalogues, statistics, "
                 "interest, social trends), one after another; only then use web search to "
-                "fill gaps. Only fetch a "
+                "fill gaps. Always try to find what competitors charge: name competing shops "
+                "(search for them if needed) and read their prices. Only fetch a "
                 "URL that a tool result gave you; never guess or invent URLs. If a tool "
                 "fails, try a different angle, such as a related or competing product. "
                 "When you have enough evidence, or tools stop helping, reply 'Research complete.'"},
             {"role": "user", "content":
                 f"Category: {state['category']}\nCountry: {state['country']}\nQuestions:\n"
-                + "\n".join(f"- {q}" for q in questions) + versus_note(state)},
+                + "\n".join(f"- {q}" for q in questions) + leads + versus_note(state)},
         ]
         return {"questions": questions, "messages": messages, "evidence": [],
                 "research_steps": 0, "tool_calls": 0, "tool_errors": 0,
@@ -128,6 +145,7 @@ def build_graph(llm):
         for call in messages[-1]["tool_calls"]:
             name, raw_args = call["function"]["name"], call["function"]["arguments"]
             calls += 1
+            progress.info("tool  %s %s", name, (raw_args or "")[:110])
             try:
                 args = json.loads(raw_args or "{}")
                 result = toolbox.call_tool(name, args)
@@ -139,6 +157,7 @@ def build_graph(llm):
                 log.append({"tool": name, "args": raw_args, "ok": True, "detail": item["id"]})
             except Exception as e:  # report the failure back so the agent can adapt
                 errors += 1
+                progress.info("      failed: %s", str(e)[:110])
                 content = f"ERROR from {name}: {type(e).__name__}: {e}"
                 log.append({"tool": name, "args": raw_args, "ok": False,
                             "detail": f"{type(e).__name__}: {e}"})
@@ -147,6 +166,7 @@ def build_graph(llm):
                 "tool_calls": calls, "tool_errors": errors, "tool_log": log}
 
     def write(state: RunState) -> dict:
+        progress.info("step  write")
         evidence_text = "\n".join(f"[{e['id']}] ({e['tool']}) {e['summary'][:WRITER_CHARS]}"
                                   for e in state["evidence"]) or "(no evidence gathered)"
         prompt = (
@@ -168,6 +188,7 @@ def build_graph(llm):
         return {"brief": reply["content"] or ""}
 
     def critique(state: RunState) -> dict:
+        progress.info("step  critique")
         check = check_citations(state["brief"], state["evidence"])
         if not check["unsupported"]:
             return {"feedback": ""}
@@ -182,6 +203,7 @@ def build_graph(llm):
 
     def judge(state: RunState) -> dict:
         """Read each claim against its evidence; send the draft back once if any fail."""
+        progress.info("step  judge")
         verdicts = judge_claims(llm, state["brief"], state["evidence"])
         failed = [v for v in verdicts if v["verdict"] == "unsupported"]
         if not failed or state["judge_rewrites"] >= MAX_JUDGE_REWRITES:
