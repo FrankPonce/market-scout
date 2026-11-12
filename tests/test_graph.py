@@ -13,7 +13,7 @@ def fake_tools(monkeypatch):
     def fake(name, args):
         if name == "open_food_catalogue":
             raise LookupError("service down")
-        return {"source": f"https://example.org/{name}", "summary": f"{name} result."}
+        return {"source": f"https://example.org/{name}", "summary": f"{name} returned a finding long enough to count as real evidence."}
     monkeypatch.setattr(toolbox, "call_tool", fake)
 
 
@@ -102,3 +102,34 @@ def test_judge_ignores_malformed_rulings():
             return {"role": "assistant", "content": '{"verdicts": [{"n": 9, "verdict": "supported"}, {"n": 1, "verdict": "maybe"}]}'}
     verdicts = judge_claims(Garbled(), "## Findings\n- a claim [E1]", [{"id": "E1", "summary": "x"}])
     assert verdicts[0]["verdict"] == "unchecked" and tally(verdicts)["faithfulness"] is None
+
+
+def test_empty_sources_are_not_counted_as_evidence(monkeypatch):
+    monkeypatch.setattr(toolbox, "call_tool", lambda name, args: {"source": "https://example.org", "summary": "  "})
+    m = run_agent(OfflineLLM(), "oat milk", "FI")["metrics"]
+    assert m["evidence"] == 0 and m["tool_errors"] == 3
+
+
+def test_versus_is_carried_into_the_run(fake_tools):
+    state = run_agent(OfflineLLM(), "y2k tees", "FI", versus="dark luxury tees")
+    assert state["versus"] == "dark luxury tees" and state["metrics"]["evidence"] == 2
+
+
+def test_mcp_server_lists_and_calls_tools(monkeypatch):
+    """A real MCP client talks to the server over stdio."""
+    import asyncio, json, sys
+    pytest.importorskip("mcp")
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    async def session():
+        params = StdioServerParameters(command=sys.executable, args=["-m", "marketscout.mcp_server"])
+        async with stdio_client(params) as (reader, writer), ClientSession(reader, writer) as client:
+            await client.initialize()
+            names = [t.name for t in (await client.list_tools()).tools]
+            bad = await client.call_tool("eurostat_online_shopping", {"country": "ZZ"})
+            return names, bad
+
+    names, bad = asyncio.run(session())
+    assert {"research_market", "search_trends", "store_prices", "wikipedia_interest"} <= set(names)
+    assert bad.is_error and "Unsupported country" in bad.content[0].text

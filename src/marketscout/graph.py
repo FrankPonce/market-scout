@@ -22,10 +22,12 @@ from typing import TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from . import extern  # noqa: F401  (registers the optional rug case-study tools)
+from . import signals  # noqa: F401  (registers the search, price and video tools)
 from . import tools as toolbox
 from .judge import CITATION, claim_lines, judge_claims, tally
 
-MAX_RESEARCH_STEPS = 8
+MAX_RESEARCH_STEPS = 10
+MIN_EVIDENCE_CHARS = 60     # shorter than this means a paywall or a script-only page
 MAX_REVISIONS = 2
 MAX_JUDGE_REWRITES = 1      # how many times the judge may send a draft back
 # Free model tiers cap tokens per minute, so long sources are trimmed in the prompts.
@@ -37,6 +39,7 @@ WRITER_CHARS = 1500         # of each piece of evidence shown to the writer
 class RunState(TypedDict, total=False):
     category: str
     country: str
+    versus: str                 # optional second concept, for a head-to-head brief
     questions: list[str]
     messages: list[dict]        # the researcher's conversation with its tools
     evidence: list[dict]        # {id, tool, args, source, summary}
@@ -61,6 +64,18 @@ def check_citations(brief: str, evidence: list[dict]) -> dict:
             "coverage": (len(lines) - len(unsupported)) / len(lines) if lines else 0.0}
 
 
+def versus_note(state: dict) -> str:
+    """Extra instruction when the brief compares two concepts instead of studying one."""
+    if not state.get("versus"):
+        return ""
+    a, b = state["category"], state["versus"]
+    return (f"\nThis is a HEAD-TO-HEAD comparison of two concepts a seller is choosing between: "
+            f"'{a}' versus '{b}'. Gather the same kinds of evidence for both; where a tool takes "
+            "several terms or shops, cover both concepts in one call. Compare them on demand, "
+            "competition and price. The summary must say which concept the evidence favours and "
+            "how strongly, or that the evidence cannot separate them.")
+
+
 def build_graph(llm):
     def ctx(state: RunState) -> dict:
         return {"category": state["category"], "country": state["country"],
@@ -72,7 +87,7 @@ def build_graph(llm):
                 "You plan market research. Reply with JSON: {\"questions\": [3 to 5 short, "
                 "answerable research questions]}."},
             {"role": "user", "content":
-                f"Product category: {state['category']}\nTarget country: {state['country']}"},
+                f"Product category: {state['category']}\nTarget country: {state['country']}" + versus_note(state)},
         ], json_mode=True, context=ctx(state))
         try:
             questions = json.loads(reply["content"])["questions"]
@@ -90,7 +105,7 @@ def build_graph(llm):
                 "When you have enough evidence, or tools stop helping, reply 'Research complete.'"},
             {"role": "user", "content":
                 f"Category: {state['category']}\nCountry: {state['country']}\nQuestions:\n"
-                + "\n".join(f"- {q}" for q in questions)},
+                + "\n".join(f"- {q}" for q in questions) + versus_note(state)},
         ]
         return {"questions": questions, "messages": messages, "evidence": [],
                 "research_steps": 0, "tool_calls": 0, "tool_errors": 0,
@@ -116,6 +131,8 @@ def build_graph(llm):
             try:
                 args = json.loads(raw_args or "{}")
                 result = toolbox.call_tool(name, args)
+                if len(result.get("summary", "").strip()) < MIN_EVIDENCE_CHARS:
+                    raise LookupError("the source returned no readable text (paywall or script-only page)")
                 item = {"id": f"E{len(evidence) + 1}", "tool": name, "args": args, **result}
                 evidence.append(item)
                 content = f"[{item['id']}] {item['summary'][:RESEARCH_CHARS]}\nsource: {item['source']}"
@@ -143,7 +160,7 @@ def build_graph(llm):
             "below; never invent numbers. A risk must follow from the evidence, not from "
             "general knowledge. Put anything the evidence cannot answer under Open questions.\n\n"
             f"Research questions:\n" + "\n".join(f"- {q}" for q in state["questions"])
-            + f"\n\nEvidence:\n{evidence_text}"
+            + versus_note(state) + f"\n\nEvidence:\n{evidence_text}"
         )
         if state.get("feedback"):
             prompt += f"\n\nYour previous draft was rejected:\n{state['feedback']}\n\nPrevious draft:\n{state['brief']}"
@@ -196,9 +213,10 @@ def build_graph(llm):
     return g.compile()
 
 
-def run_agent(llm, category: str, country: str) -> dict:
+def run_agent(llm, category: str, country: str, versus: str | None = None) -> dict:
     started = time.time()
-    state = build_graph(llm).invoke({"category": category, "country": country.upper()},
+    state = build_graph(llm).invoke({"category": category, "country": country.upper(),
+                                     "versus": versus or ""},
                                     {"recursion_limit": 60})
     return _finish(state, llm, "agent", started)
 

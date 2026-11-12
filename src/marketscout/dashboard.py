@@ -26,6 +26,7 @@ SHAPES = [
     (("milk", "juice", "drink", "cream", "yogurt", "yoghurt"), "carton"),
     (("oil", "wine", "beer", "water", "sauce", "vinegar", "soda", "bottle", "shampoo"), "bottle"),
     (("rug", "carpet", "mat", "runner"), "rug"),
+    (("shirt", "tee", "hoodie", "clothing", "apparel", "wear", "fashion", "y2k"), "tee"),
 ]
 
 
@@ -39,7 +40,7 @@ def tagline(country: str, shape: str) -> str | None:
     """'for the American home', 'for the Finnish table': the line under the title."""
     if country not in DEMONYM:
         return None
-    return f"for the {DEMONYM[country]} {'table' if shape in ('carton', 'bottle') else 'home'}"
+    return f"for the {DEMONYM[country]} { {'carton': 'table', 'bottle': 'table', 'tee': 'wardrobe'}.get(shape, 'home') }"
 
 
 def stock_photo(category: str) -> dict | None:
@@ -145,6 +146,7 @@ def build(run_dir: Path) -> Path:
     payload = {
         "category": run["category"],
         "country": country,
+        "versus": run.get("versus") or "",
         "countryName": "the United States" if country == "US" else COUNTRIES.get(country, ("", country))[1].title(),
         "outline": country_outline(country),
         "shape": pick_shape(run["category"]),

@@ -56,6 +56,8 @@ a { color: inherit; }
 
 .pitch .hello { font-family: var(--script); font-size: 1.9rem; color: var(--red); line-height: 1; margin: 0 0 6px; transform: rotate(-3deg); transform-origin: left; }
 .pitch h1 { font-family: var(--fat); font-weight: 400; font-size: clamp(3.6rem, 8.6vw, 7.6rem); line-height: .88; letter-spacing: -.01em; margin: 0; text-shadow: 5px 4px 0 var(--mustard); overflow-wrap: anywhere; }
+.pitch h1.long { font-size: clamp(2.6rem, 5.6vw, 4.8rem); line-height: .95; }
+.pitch .versus { font-family: var(--script); font-size: clamp(1.8rem, 3.4vw, 2.7rem); line-height: 1.1; color: var(--red); margin: 10px 0 0; }
 .pitch .for { display: flex; align-items: center; gap: 16px; font-style: italic; font-size: 1.5rem; margin: 16px 0 0; }
 .pitch .for svg { height: 64px; width: auto; flex: none; overflow: visible; }
 .pitch .for path { fill: var(--teal); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
@@ -206,6 +208,7 @@ a { color: inherit; }
     <div class="pitch">
       <p class="hello">A trade report for sellers of</p>
       <h1 id="title"></h1>
+      <p class="versus" id="versus" hidden></p>
       <p class="for"><span id="place"></span><span id="outline"></span></p>
       <div class="item label" id="item"></div>
       <div id="summary"></div>
@@ -226,6 +229,8 @@ const money = (v) => "$" + Math.round(v).toLocaleString("en");
 const fn = (ids) => [...new Set(ids)].map((id) => `<a class="fn" href="#${id}" title="See the source">${id.slice(1)}</a>`).join("");
 // The judge's ruling on a claim; fully backed claims stay unmarked.
 const ruling = (c) => c.verdict === "partial" ? `<span class="ruling part" title="${esc(c.reason || "")}">Partly backed</span>` : c.verdict === "unsupported" ? `<span class="ruling not" title="${esc(c.reason || "")}">Not backed</span>` : "";
+const SYMBOLS = { EUR: "€", USD: "$", GBP: "£" };
+const sym = (p) => p.currency ? (SYMBOLS[p.currency] || p.currency + " ") : "$";
 const INK = "#1f1b2d", RED = "#d9432b", MUSTARD = "#f0b429", PAPER2 = "#e9dcc0";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const TOOL_NAMES = { wikipedia_interest: "Wikipedia interest", eurostat_online_shopping: "Eurostat online shopping", open_food_catalogue: "Open Food Facts brands", web_search: "Web search", fetch_page: "Read a web page", retail_price_comparison: "Retailer price comparison", social_trends: "Social media trends", trend_articles: "Trend articles" };
@@ -258,6 +263,10 @@ const ART = {
     <polygon fill="#1e7a74" points="102,90 132,104 102,122 72,108"/><ellipse fill="#fffaf0" cx="102" cy="106" rx="11" ry="6"/>
     <polygon class="shade" points="92,154 184,102 184,110 92,162"/><polygon fill="#a8301d" points="20,118 92,154 92,162 20,126"/>
     <path fill="none" d="M14 122l-8 5M22 127l-8 5M30 131l-8 5M186 98l8-5M178 94l8-5M170 90l8-5"/>`,
+  tee: `<ellipse class="ground" cx="100" cy="186" rx="58" ry="8"/>
+    <polygon fill="#fffaf0" points="70,38 88,30 112,30 130,38 170,62 154,94 134,84 134,172 66,172 66,84 46,94 30,62"/>
+    <polygon class="shade" points="134,84 134,172 114,172 114,56 130,38 170,62 154,94"/>
+    <path fill="#1f1b2d" d="M88 30q12 16 24 0z"/><polygon fill="#d9432b" points="100,84 107,102 126,103 111,115 116,134 100,123 84,134 89,115 74,103 93,102"/>`,
   box: `<ellipse class="ground" cx="104" cy="184" rx="66" ry="9"/>
     <polygon fill="#d9a35a" points="40,76 104,104 104,178 40,148"/><polygon fill="#d9a35a" points="104,104 166,76 166,148 104,178"/><polygon class="shade" points="104,104 166,76 166,148 104,178"/>
     <polygon fill="#e9c184" points="40,76 102,50 166,76 104,104"/><polygon fill="#f0b429" points="66,65 78,60 142,87 130,92"/><polygon fill="#f0b429" points="130,92 142,87 142,110 130,116"/>`,
@@ -269,6 +278,7 @@ const S = RUN.sections, m = RUN.metrics;
 const audited = (m.supported || 0) + (m.partial || 0) + (m.not_supported || 0);
 document.title = `${cap(RUN.category)} in ${RUN.countryName} | The Merchant's Catalogue`;
 $("title").textContent = cap(RUN.category);
+if (RUN.versus) { $("versus").hidden = false; $("versus").textContent = `versus ${RUN.versus}`; document.querySelector(".hello").textContent = "A head-to-head trade report on"; document.getElementById("title").classList.add("long"); }
 $("place").textContent = RUN.tagline || `in ${RUN.countryName}`;
 $("issue").textContent = `${RUN.countryName.replace(/^the /, "")}, ${new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
 if (RUN.outline) $("outline").outerHTML = `<svg viewBox="0 0 ${RUN.outline.w} ${RUN.outline.h}" role="img" aria-label="Outline of ${esc(RUN.countryName)}"><path d="${RUN.outline.path}"/></svg>`;
@@ -280,7 +290,9 @@ $("seal").innerHTML = `${RUN.evidence.length} sources<br>checked!`;
 const figures = [];
 const firstOf = (kind) => RUN.evidence.find((e) => e.data && e.data.kind === kind && e.data.points.length);
 const prices = firstOf("retailer_prices");
-if (prices) for (const r of prices.data.points) figures.push([money(r.median), `typical ${prices.data.label} at ${r.name}`, prices.id]);
+if (prices) for (const r of prices.data.points) figures.push([sym(r) + Math.round(r.median), `typical ${prices.data.label} at ${r.name}`, prices.id]);
+const searched = firstOf("trend_lines");
+if (searched) { const last = searched.data.points.at(-1), i = last.slice(1).indexOf(Math.max(...last.slice(1))); figures.push([cap(searched.data.terms[i]), `the most-searched of ${searched.data.terms.length} terms compared`, searched.id]); }
 const views = firstOf("monthly_views");
 if (views) {
   const v = views.data.points.map((p) => p[1]), recent = v.slice(-12), before = v.slice(-24, -12), sum = (a) => a.reduce((x, y) => x + y, 0);
@@ -313,6 +325,22 @@ function viewsChart(d) {
     <text class="num" x="${px}" y="${y(pts[peakI][1]) - 13}" text-anchor="middle" fill="${RED}" stroke="#f1e7d0" stroke-width="5" paint-order="stroke">${pts[peakI][1].toLocaleString("en")} in ${label(pts[peakI][0])}</text>
     ${pts.map((p, i) => (i % 6 === 0 || i === pts.length - 1 ? `<text x="${x(i)}" y="${H - 10}" text-anchor="${i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"}">${label(p[0])}</text>` : "")).join("")}</svg>`;
 }
+// One inked line per search term, each with its own stroke so they survive a black-and-white print.
+function trendChart(d) {
+  const pts = d.points, W = 660, H = 300, L = 40, R = 150, T = 20, B = 34;
+  const top = Math.max(1, ...pts.flatMap((p) => p.slice(1))), max = top * 1.1;
+  const x = (i) => L + (i * (W - L - R)) / Math.max(pts.length - 1, 1), y = (v) => H - B - (v * (H - T - B)) / max;
+  const inks = [[RED, ""], [INK, ""], ["#1e7a74", "7 4"], ["#8a5a00", "2 4"], ["#6b6780", "10 3 2 3"]];
+  const ends = d.terms.map((t, k) => ({ t, k, v: pts.at(-1)[k + 1], ly: y(pts.at(-1)[k + 1]) })).sort((a, b) => a.ly - b.ly);
+  for (let i = 1; i < ends.length; i++) ends[i].ly = Math.max(ends[i].ly, ends[i - 1].ly + 17);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${d.terms.map((t, k) => `${t}: ${pts[0][k + 1]} in ${pts[0][0]} to ${pts.at(-1)[k + 1]} in ${pts.at(-1)[0]}`).join("; ")}">
+    ${[0, 0.5, 1].map((f) => { const v = Math.round(top * f); return `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${INK}" stroke-opacity=".3" stroke-dasharray="2 5"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`; }).join("")}
+    ${d.terms.map((t, k) => `<path d="${pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[k + 1]).toFixed(1)}`).join("")}" fill="none" stroke="${inks[k % 5][0]}" stroke-width="${k === 0 ? 4 : 3}" stroke-dasharray="${inks[k % 5][1]}" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${x(pts.length - 1)}" cy="${y(pts.at(-1)[k + 1])}" r="4.5" fill="${inks[k % 5][0]}" stroke="${INK}" stroke-width="1.5"/>`).join("")}
+    ${ends.map((e) => `<text x="${x(pts.length - 1) + 12}" y="${e.ly + 5}" style="font-size:14px" fill="${inks[e.k % 5][0]}">${esc(e.t.length > 14 ? e.t.slice(0, 13) + "…" : e.t)} <tspan class="num" style="font-size:14px">${e.v}</tspan></text>`).join("")}
+    <line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="${INK}" stroke-width="2"/>
+    ${pts.map((p, i) => `<text x="${x(i)}" y="${H - 10}" text-anchor="middle">${p[0]}</text>`).join("")}</svg>`;
+}
 function percentChart(d) {
   const pts = d.points, W = 360, H = 270, B = 28, T = 36, gap = 12;
   const bw = (W - gap * (pts.length - 1)) / pts.length, h = (v) => (v / 100) * (H - T - B);
@@ -336,12 +364,12 @@ function priceTable(d) {
   const step = [5, 10, 25, 50, 100, 250, 500, 1000].find((s) => max / s <= 5) || 2500;
   const ticks = Array.from({ length: Math.floor(max / step) + 1 }, (_, i) => i * step);
   return `<table class="prices"><thead><tr><th>Store</th><th>Typical price</th><th class="strip">From cheapest to dearest</th><th class="r">Rating</th></tr></thead><tbody>
-    ${d.points.map((p) => `<tr><td class="store">${esc(p.name)}<small>${p.n} listings</small></td><td class="price"><sup>$</sup>${Math.round(p.median)}</td>
+    ${d.points.map((p) => `<tr><td class="store">${esc(p.name)}<small>${p.n} listings</small></td><td class="price"><sup>${sym(p)}</sup>${Math.round(p.median)}</td>
       <td class="strip"><svg class="chart" viewBox="0 0 ${W} 46" role="img" aria-label="${esc(p.name)}: from ${money(p.min)} to ${money(p.max)}, typically ${money(p.median)}">
         ${ticks.map((v) => `<line x1="${x(v)}" x2="${x(v)}" y1="30" y2="36" stroke="${INK}"/><text x="${x(v)}" y="46" text-anchor="middle" opacity=".7">${v}</text>`).join("")}
         <line x1="${x(p.min)}" x2="${x(p.max)}" y1="18" y2="18" stroke="${INK}" stroke-width="2"/><line x1="${x(p.min)}" x2="${x(p.min)}" y1="12" y2="24" stroke="${INK}" stroke-width="2"/><line x1="${x(p.max)}" x2="${x(p.max)}" y1="12" y2="24" stroke="${INK}" stroke-width="2"/>
         <rect x="${x(p.q1)}" y="7" width="${Math.max(x(p.q3) - x(p.q1), 3)}" height="22" fill="${MUSTARD}" stroke="${INK}" stroke-width="2"/><rect x="${x(p.q1)}" y="7" width="${Math.max(x(p.q3) - x(p.q1), 3)}" height="22" fill="url(#dots-ink)" opacity=".35"/>
-        <line x1="${x(p.median)}" x2="${x(p.median)}" y1="2" y2="34" stroke="${RED}" stroke-width="4"/><text x="${x(p.max) + 7}" y="22">${money(p.max)}</text></svg></td>
+        <line x1="${x(p.median)}" x2="${x(p.median)}" y1="2" y2="34" stroke="${RED}" stroke-width="4"/><text x="${x(p.max) + 7}" y="22">${sym(p)}${Math.round(p.max)}</text></svg></td>
       <td class="r">${p.rating ? `<span class="stars">★</span> ${p.rating.toFixed(1)}` : ""}</td></tr>`).join("")}</tbody></table>`;
 }
 function bestSellers(d) {
@@ -362,8 +390,8 @@ for (const e of RUN.evidence) {
   const d = e.data;
   if (!d || !d.points || !d.points.length) continue;
   if (d.kind === "retailer_prices") {
-    html += ribbon("What your competitors charge", "three stores compared") + priceTable(d)
-      + `<p class="smallprint">Typical price is the median listing. The shaded bar holds the middle half of listings. Sizes are mixed, so read these as a guide.${fn([e.id])}</p><div class="twocol" style="margin-top:18px">${remarks(e.id)}</div>`;
+    html += ribbon("What your competitors charge", `${d.points.length} stores compared`) + priceTable(d)
+      + `<p class="smallprint">Typical price is the median listing. The shaded bar holds the middle half of listings. Sizes are mixed, so read these as a guide.${new Set(d.points.map((p) => p.currency || "")).size > 1 ? " Each store is shown in its own currency." : ""}${fn([e.id])}</p><div class="twocol" style="margin-top:18px">${remarks(e.id)}</div>`;
     if (d.products && d.products.length) html += ribbon("Their best sellers", "the most-reviewed listings") + bestSellers(d);
   } else if (d.kind === "brand_counts") {
     html += ribbon("Who you are up against", `${d.total} ${d.label || "products"} on sale`) + spread(barChart(d), e.id, "Listings in a crowd-sourced catalogue: it shows who is present, not their market share.");
@@ -371,6 +399,10 @@ for (const e of RUN.evidence) {
     html += ribbon("Is the public interested?", `readers of “${d.title}”`) + spread(viewsChart(d), e.id, `Monthly views of the ${d.lang}.wikipedia article. Page views show curiosity, not sales.`);
   } else if (d.kind === "yearly_percent") {
     html += ribbon("Can you sell it online?", "share of people who shop online") + spread(percentChart(d), e.id, "Share of all individuals who bought something online in the past year. Eurostat.", true);
+  } else if (d.kind === "trend_lines") {
+    html += ribbon("What people are searching for", d.clothing_only ? "clothing searches only" : "Google searches") + spread(trendChart(d), e.id, `Google search interest in ${RUN.countryName}, yearly average. The scale is relative to the busiest term, not a count, and shows interest, not sales.`);
+  } else if (d.kind === "videos") {
+    html += ribbon("What people are watching", "YouTube, by views") + spread(barChart({ points: d.points.map(([t, n]) => [t, n]) }), e.id, "Worldwide, all-time views of the top results. Not specific to one country.");
   } else if (d.kind === "hashtags") {
     html += ribbon("What shoppers are talking about", "Instagram and Pinterest") + spread(barChart(d), e.id, "Total likes and saves on posts carrying each hashtag.");
   }

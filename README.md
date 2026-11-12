@@ -7,6 +7,8 @@
 ![Type](https://img.shields.io/badge/Agentic%20AI-workflow%20for%20business-d9432b?style=for-the-badge&labelColor=1f1b2d)
 ![Built with](https://img.shields.io/badge/built%20with-LangGraph-1e7a74?style=for-the-badge&labelColor=1f1b2d)
 ![Python](https://img.shields.io/badge/python-3.10%2B-f0b429?style=for-the-badge&logo=python&logoColor=white&labelColor=1f1b2d)
+![Tests](https://github.com/FrankPonce/market-scout/actions/workflows/tests.yml/badge.svg)
+![MCP](https://img.shields.io/badge/MCP-server%20included-1e7a74?style=for-the-badge&labelColor=1f1b2d)
 ![Origin](https://img.shields.io/badge/evolved%20from-Wayfair%20externship%20%C2%B7%20n8n-8a5a00?style=for-the-badge&labelColor=1f1b2d)
 
 [**The workflow**](#-the-agentic-workflow) · [**Origin**](#-where-this-came-from) · [**The catalogue**](#-the-catalogue) · [**Evals**](#-evals) · [**Quickstart**](#-quickstart) · [**Repo map**](#-repository-map) · [**Limits**](#-limits)
@@ -96,11 +98,41 @@ writer does not mark its own homework.
 | `wikipedia_interest` | Wikimedia pageviews, in the local language | Whether public interest is rising, and when it peaks |
 | `eurostat_online_shopping` | Eurostat | How used the country is to buying online |
 | `open_food_catalogue` | Open Food Facts | Which brands are already on sale (food and drink) |
+| `search_trends` | Google Trends | What people search for, year by year, and which related searches are rising |
+| `search_suggestions` | Google autocomplete | What shoppers type next: price, where to buy, which brand |
+| `store_prices` | Public product feeds of online shops (Shopify) | How many products competitors sell and at what price |
+| `youtube_search` | YouTube, via yt-dlp | How much attention a topic gets, and how creators talk about it |
 | `web_search`, `fetch_page` | Tavily, then the page itself (robots.txt respected) | Market reports, news, competitor pages |
 | `retail_price_comparison`, `social_trends`, `trend_articles` | Extern course data (optional) | Prices, best sellers and trends for rugs at US retailers |
 
-All of them are free. Adding a tool is one decorated function in `tools.py`; the agent
-discovers it from its description.
+All of them are free and none needs a login. Adding a tool is one decorated function;
+the agent discovers it from its description. A source that returns no readable text,
+such as a paywalled page, is treated as a failed lookup, not as evidence.
+
+### ⚔️ Compare mode
+
+A seller often chooses between two concepts, not one. `--versus` makes the agent gather
+the same evidence for both and say which the evidence favours:
+
+```bash
+python -m marketscout "y2k scene graphic tees" --versus "dark luxury streetwear tees" --country FI
+```
+
+### 🔌 MCP server
+
+Market Scout is also a [Model Context Protocol](https://modelcontextprotocol.io) server,
+so any MCP client (Claude Desktop, Claude Code, an IDE) can use its tools. The client's
+own model can call `search_trends` or `store_prices` directly, or hand a whole question
+to `research_market` and get back a cited, audited brief.
+
+```bash
+pip install -e ".[mcp]"
+marketscout-mcp
+```
+
+```json
+{"mcpServers": {"market-scout": {"command": "marketscout-mcp"}}}
+```
 
 ## 🧵 Where this came from
 
@@ -123,8 +155,8 @@ Market Scout is the same business idea rebuilt to fix those four things.
 | | n8n workflows (v1) | Market Scout (v2) |
 |---|---|---|
 | Control flow | Fixed chain of prompts | Agent chooses its next tool at run time |
-| Scope | Area rugs | Any category, 13 countries |
-| Data | Course data server | Open sources, web search, optional course data |
+| Scope | Area rugs | Any category, 13 countries, or two concepts head to head |
+| Data | Course data server | Search trends, shop price feeds, open statistics, web search |
 | When a source fails | Run breaks or continues blind | Failure is reported back and the agent tries another angle |
 | Evidence | None attached | Every claim cites a numbered source |
 | Checking | None | Citation check, then a judge model reads each claim against its source |
@@ -215,32 +247,39 @@ src/marketscout/
   graph.py       the agent, and the chain baseline
   judge.py       the claim-against-evidence check
   tools.py       open data tools; add one with the @tool decorator
+  signals.py     search trends, autocomplete, shop price feeds, YouTube
   extern.py      optional rug case-study tools
+  mcp_server.py  the same tools and the agent, served over MCP
   llm.py         model client (Groq, Mistral, OpenRouter) and the offline stand-in
   dashboard.py   builds the catalogue page from a saved run
   cli.py         command line
 evals/           cases, runner, scorecard
-tests/           offline tests, no network or key needed
+tests/           offline tests, no key needed; run on every push by GitHub Actions
 design/          the style prototypes that led to the catalogue
 baseline/        where the original n8n workflow exports go
 ```
 
 ## 🚧 Limits
 
-- Open product data is thin outside food and drink. Non-food categories lean on web
-  search unless the optional rug data applies.
+- Shop price feeds only exist for shops built on Shopify that allow robots to read
+  them, and prices are not converted between currencies.
+- Google Trends is read through an unofficial library and can be rate-limited. Its
+  scale is relative interest, not a count of searches.
+- No TikTok, Instagram or Pinterest data: none can be read without a login, and this
+  project only uses sources it is allowed to use.
 - Wikipedia pageviews measure curiosity, not sales, and the page says so.
 - The judge catches claims that outrun their evidence. It does not check that the
   evidence itself is right.
 - Free model tiers cap tokens per minute, so long sources are trimmed in prompts.
-- The catalogue has four product drawings (carton, bottle, rug, box). Everything else
+- The catalogue has five product drawings (carton, bottle, rug, t-shirt, box). Everything else
   gets the box.
 
 ## 🗺️ Roadmap
 
 1. Hand-label a sample of claims to measure how often the judge agrees with a person.
 2. Live mode: watch the catalogue print section by section as the agent works.
-3. A licensed price source for European retailers, such as the eBay Browse API.
+3. Reddit through its official API, and a licensed marketplace price source such as
+   the eBay Browse API.
 4. Cross-country mode: one category ranked across several countries.
 5. A larger eval set and a written comparison of chain and agent.
 
